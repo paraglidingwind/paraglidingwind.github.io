@@ -118,6 +118,8 @@ table.grid{border-collapse:separate;border-spacing:0;font-variant-numeric:tabula
 /* Foi de jos (dialog) */
 dialog{border:0;padding:0;margin:auto auto 0;width:100%;max-width:640px;max-height:92dvh;border-radius:18px 18px 0 0;background:var(--surface);color:var(--ink)}
 dialog::backdrop{background:rgb(5 10 14 / .5)}
+/* Pe ecrane late (laptop) foaia stă centrată, nu lipită de marginea de jos. */
+@media (min-width: 700px) and (min-height: 600px){ dialog{margin:auto;border-radius:18px;max-height:86dvh} dialog .sheet{max-height:86dvh} }
 .sheet{display:flex;flex-direction:column;max-height:92dvh}
 .sheet header{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}
 .sheet header h2{flex:1;margin:0;font:700 20px/1.1 var(--f-display);text-transform:uppercase;letter-spacing:.02em}
