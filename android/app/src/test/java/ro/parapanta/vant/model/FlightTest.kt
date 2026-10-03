@@ -33,7 +33,8 @@ class FlightTest {
         assertEquals("Alege sau scrie locația.", validateFlight(" ", today, 1, 0, today))
         assertEquals("Data nu poate fi în viitor.", validateFlight("Liteni", "2099-01-01", 1, 0, today))
         assertEquals("Scrie cât timp ai stat în aer.", validateFlight("Liteni", today, 0, 0, today))
-        assertEquals("Minutele trebuie să fie între 0 și 59.", validateFlight("Liteni", today, 1, 75, today))
+        assertNull(validateFlight("Liteni", today, 0, 80, today))
+        assertEquals("1 h 20 min", fmtDur(0 * 60 + 80))
         assertNull(validateFlight("Liteni", "2025-07-12", 1, 30, today))
     }
 }

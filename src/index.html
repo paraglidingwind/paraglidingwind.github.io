@@ -238,9 +238,10 @@ input.in,textarea.in,select.in{width:100%;min-height:44px;padding:9px 12px;borde
       <p class="hint">Poți alege și o zi din trecut, pentru zborurile mai vechi.</p>
       <label class="f">Timp în aer în ziua respectivă</label>
       <div class="two">
-        <div><input class="in" id="flH" type="number" min="0" max="23" inputmode="numeric" placeholder="0" aria-label="Ore"><p class="hint">ore</p></div>
-        <div><input class="in" id="flM" type="number" min="0" max="59" inputmode="numeric" placeholder="0" aria-label="Minute"><p class="hint">minute</p></div>
+        <div><input class="in" id="flH" type="number" min="0" inputmode="numeric" placeholder="0" aria-label="Ore"><p class="hint">ore</p></div>
+        <div><input class="in" id="flM" type="number" min="0" inputmode="numeric" placeholder="0" aria-label="Minute"><p class="hint">minute</p></div>
       </div>
+      <p class="hint" id="flTotal" style="font-weight:600;color:var(--ink)"></p>
       <p class="err" id="flErr" hidden></p>
       <div class="actions">
         <button class="btn primary" type="submit">Salvează</button>
@@ -684,7 +685,7 @@ function renderLog(){
   const places = new Set(flights.map(f => f.site)).size;
   let html = `<div class="stats"><div><b>${fmtDur(total(flights))}</b><span>în aer</span></div><div><b>${flights.length}</b><span>${flights.length === 1 ? 'zi de zbor' : 'zile de zbor'}</span></div><div><b>${places}</b><span>${places === 1 ? 'locație' : 'locații'}</span></div></div>
     <p class="hint" style="margin:8px 0 0">În ${year}: ${fmtDur(total(inYear))} în ${zile(inYear.length)}.</p>
-    <div class="actions"><button class="btn primary" id="addFlight" type="button">+ Adaugă zi de zbor</button></div>
+    <div class="actions"><button class="btn primary" id="addFlight" type="button">+ Adaugă zi de zbor</button>${flights.length ? '<button class="btn" id="exportXlsx" type="button">Export Excel</button>' : ''}</div>
     <div class="seg" role="tablist"><button role="tab" type="button" aria-selected="${logView === 'days'}" data-view="days">Pe zile</button><button role="tab" type="button" aria-selected="${logView === 'sites'}" data-view="sites">Pe locații</button></div>`;
   if (!flights.length){
     html += `<p class="hint" style="margin-top:16px">Încă nu ai nimic notat. Apasă „Adaugă zi de zbor”, sau „Am zburat aici” din pagina unei locații. Poți trece și zborurile mai vechi.</p>`;
@@ -724,9 +725,20 @@ function openFlight(f = {}){
   $('#flH').value = f.minutes != null ? Math.floor(f.minutes / 60) : '';
   $('#flM').value = f.minutes != null ? f.minutes % 60 : '';
   $('#flErr').hidden = true;
+  showFlTotal();
   const del = $('#flDelete'); del.hidden = !editingId; delete del.dataset.armed; del.textContent = 'Șterge';
   $('#dlgFlight').showModal();
 }
+/* Totalul se recalculează live: 80 de minute = 1 h 20 min. La ieșirea din câmp, minutele peste 59 trec la ore. */
+function showFlTotal(){
+  const t = (parseInt($('#flH').value, 10) || 0) * 60 + (parseInt($('#flM').value, 10) || 0);
+  $('#flTotal').textContent = t > 0 ? `Total: ${fmtDur(t)}` : '';
+}
+for (const id of ['#flH', '#flM']) $(id).addEventListener('input', showFlTotal);
+$('#flM').addEventListener('change', () => {
+  const m = parseInt($('#flM').value, 10) || 0;
+  if (m >= 60){ $('#flH').value = (parseInt($('#flH').value, 10) || 0) + Math.floor(m / 60); $('#flM').value = m % 60; showFlTotal(); }
+});
 $('#flSite').addEventListener('change', e => { $('#flSiteOther').hidden = e.target.value !== '__other'; if (!$('#flSiteOther').hidden) $('#flSiteOther').focus(); });
 $('#flForm').addEventListener('submit', e => {
   e.preventDefault();
@@ -737,7 +749,7 @@ $('#flForm').addEventListener('submit', e => {
   if (!site) msg = 'Alege sau scrie locația.';
   else if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) msg = 'Alege data.';
   else if (date > localDate(new Date())) msg = 'Data nu poate fi în viitor.';
-  else if (h < 0 || m < 0 || m > 59) msg = 'Minutele trebuie să fie între 0 și 59.';
+  else if (h < 0 || m < 0) msg = 'Orele și minutele nu pot fi negative.';
   else if (minutes <= 0) msg = 'Scrie cât timp ai stat în aer.';
   if (msg){ err.textContent = msg; err.hidden = false; return; }
   if (editingId){ const f = flights.find(x => x.id === editingId); Object.assign(f, {site, date, minutes}); }
@@ -747,11 +759,86 @@ $('#flForm').addEventListener('submit', e => {
   toast(editingId ? 'Modificat' : `Salvat: ${site}, ${fmtDur(minutes)}`);
 });
 
+/* ---------- export Excel ----------
+   Fișier .xlsx construit direct (XML + arhivă zip fără compresie), fără biblioteci.
+   Aceeași structură ca Xlsx.kt din aplicația Android. */
+const xmlEsc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const excelDate = d => { const [y, m, dd] = d.split('-').map(Number); return (Date.UTC(y, m - 1, dd) - Date.UTC(1899, 11, 30)) / 864e5; };
+const col = i => 'ABCD'[i];
+function xlRow(r, cells){
+  return `<row r="${r}">` + cells.map((c, i) => {
+    const ref = col(i) + r;
+    if (c.f) return `<c r="${ref}" s="${c.s}"><f>${c.f}</f><v>${c.v}</v></c>`;
+    if (typeof c.v === 'string') return `<c r="${ref}" t="inlineStr"${c.s ? ` s="${c.s}"` : ''}><is><t>${xmlEsc(c.v)}</t></is></c>`;
+    return `<c r="${ref}"${c.s ? ` s="${c.s}"` : ''}><v>${c.v}</v></c>`;
+  }).join('') + '</row>';
+}
+function xlSheet(widths, rows){
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+    + '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>'
+    + '<cols>' + widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join('') + '</cols>'
+    + '<sheetData>' + rows.map((c, i) => xlRow(i + 1, c)).join('') + '</sheetData></worksheet>';
+}
+/* Stiluri: 1 = antet (bold), 2 = dată zz.ll.aaaa, 3 = durată [h]:mm, 4 = durată bold. */
+function xlsxParts(list){
+  const H = s => ({v: s, s: 1});
+  const days = [...list].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+  const n = days.length;
+  const s1 = [[H('Data'), H('Locație'), H('Timp în aer'), H('Minute')],
+    ...days.map(f => [{v: excelDate(f.date), s: 2}, {v: f.site}, {v: f.minutes / 1440, s: 3}, {v: f.minutes}]),
+    [H('Total'), {v: ''}, {f: `SUM(C2:C${n + 1})`, v: total(days) / 1440, s: 4}, {f: `SUM(D2:D${n + 1})`, v: total(days), s: 1}]];
+  const by = new Map();
+  for (const f of list){ const x = by.get(f.site) || {site: f.site, n: 0, m: 0, last: ''}; x.n++; x.m += f.minutes; if (f.date > x.last) x.last = f.date; by.set(f.site, x); }
+  const s2 = [[H('Locație'), H('Zile de zbor'), H('Timp în aer'), H('Ultima zi')],
+    ...[...by.values()].sort((a, b) => b.m - a.m).map(x => [{v: x.site}, {v: x.n}, {v: x.m / 1440, s: 3}, {v: excelDate(x.last), s: 2}])];
+  const NS = 'http://schemas.openxmlformats.org', X = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+  const WS = 'application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml';
+  return [
+    ['[Content_Types].xml', X + `<Types xmlns="${NS}/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="${WS}"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="${WS}"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`],
+    ['_rels/.rels', X + `<Relationships xmlns="${NS}/package/2006/relationships"><Relationship Id="rId1" Type="${NS}/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+    ['xl/workbook.xml', X + `<workbook xmlns="${NS}/spreadsheetml/2006/main" xmlns:r="${NS}/officeDocument/2006/relationships"><sheets><sheet name="Zile de zbor" sheetId="1" r:id="rId1"/><sheet name="Pe locații" sheetId="2" r:id="rId2"/></sheets><calcPr calcId="0" fullCalcOnLoad="1"/></workbook>`],
+    ['xl/_rels/workbook.xml.rels', X + `<Relationships xmlns="${NS}/package/2006/relationships"><Relationship Id="rId1" Type="${NS}/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="${NS}/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="${NS}/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+    ['xl/styles.xml', X + `<styleSheet xmlns="${NS}/spreadsheetml/2006/main"><numFmts count="2"><numFmt numFmtId="164" formatCode="dd.mm.yyyy"/><numFmt numFmtId="165" formatCode="[h]:mm"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="5"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="165" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`],
+    ['xl/worksheets/sheet1.xml', xlSheet([12, 26, 12, 10], s1)],
+    ['xl/worksheets/sheet2.xml', xlSheet([26, 13, 12, 12], s2)],
+  ];
+}
+const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++){ let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = b => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC_T[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+/* Arhivă zip simplă (fără compresie): antet local + director central + sfârșit. */
+function zipBlob(files, type){
+  const enc = new TextEncoder(), parts = [], central = []; let off = 0;
+  for (const [fname, text] of files){
+    const name = enc.encode(fname), data = enc.encode(text), crc = crc32(data), n = data.length;
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(12, 0x21, true);
+    h.setUint32(14, crc, true); h.setUint32(18, n, true); h.setUint32(22, n, true); h.setUint16(26, name.length, true);
+    parts.push(new Uint8Array(h.buffer), name, data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(14, 0x21, true);
+    c.setUint32(16, crc, true); c.setUint32(20, n, true); c.setUint32(24, n, true); c.setUint16(28, name.length, true); c.setUint32(42, off, true);
+    central.push(new Uint8Array(c.buffer), name);
+    off += 30 + name.length + n;
+  }
+  const size = central.reduce((a, b) => a + b.length, 0), e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, size, true); e.setUint32(16, off, true);
+  return new Blob([...parts, ...central, new Uint8Array(e.buffer)], {type});
+}
+function exportXlsx(){
+  const blob = zipBlob(xlsxParts(flights), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `jurnal-zbor-${localDate(new Date())}.xlsx`;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  toast('Fișierul Excel a fost descărcat');
+}
+
 /* ---------- evenimente ---------- */
 document.addEventListener('click', e => {
   const t = e.target.closest('button'); if (!t) return;
   if (t.matches('[data-close]')) return t.closest('dialog').close();
   if (t.id === 'log') return openLog();
+  if (t.id === 'exportXlsx') return exportXlsx();
   if (t.id === 'addFlight') return openFlight({site: logSite || undefined});
   if (t.dataset.view){ logView = t.dataset.view; logSite = null; renderLog(); return; }
   if (t.dataset.siteFilter != null){ logSite = t.dataset.siteFilter; logView = 'days'; renderLog(); return; }

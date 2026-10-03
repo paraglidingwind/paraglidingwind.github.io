@@ -33,12 +33,12 @@ fun bySite(flights: List<Flight>): List<SiteTotal> =
         .map { (s, v) -> SiteTotal(s, v.size, v.sumOf { it.minutes }, v.maxOf { it.date }) }
         .sortedByDescending { it.minutes }
 
-/** Mesajul de eroare pentru formular, sau null dacă datele sunt bune. Aceleași mesaje ca pe web. */
+/** Minutele peste 59 sunt permise: 0 h 80 min = 1 h 20 min. Mesajul de eroare pentru formular, sau null dacă datele sunt bune. Aceleași mesaje ca pe web. */
 fun validateFlight(site: String, date: String?, h: Int, m: Int, today: String): String? = when {
     site.isBlank() -> "Alege sau scrie locația."
     date == null || !Regex("""\d{4}-\d{2}-\d{2}""").matches(date) -> "Alege data."
     date > today -> "Data nu poate fi în viitor."
-    h < 0 || m < 0 || m > 59 -> "Minutele trebuie să fie între 0 și 59."
+    h < 0 || m < 0 -> "Orele și minutele nu pot fi negative."
     h * 60 + m <= 0 -> "Scrie cât timp ai stat în aer."
     else -> null
 }

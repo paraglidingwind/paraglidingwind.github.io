@@ -1,6 +1,8 @@
 package ro.parapanta.vant.ui
 
 import android.app.DatePickerDialog
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -72,6 +74,7 @@ import kotlinx.coroutines.launch
 import ro.parapanta.vant.model.Flight
 import ro.parapanta.vant.model.byMonth
 import ro.parapanta.vant.model.bySite
+import ro.parapanta.vant.model.flightsXlsx
 import ro.parapanta.vant.model.fmtDur
 import ro.parapanta.vant.model.validateFlight
 import ro.parapanta.vant.model.zile
@@ -81,6 +84,7 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 private val RO = Locale.forLanguageTag("ro")
+private const val XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 private const val BOOK = "M6 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6z M9 3v18 M12.5 8h3.5 M12.5 12h3.5"
 private val bookPath by lazy { PathParser().parsePathString(BOOK).toPath() }
 
@@ -121,6 +125,13 @@ fun LogScreen(vm: MainViewModel, state: UiState, draft: Flight?, onDraftShown: (
     var filter by rememberSaveable { mutableStateOf<String?>(null) }
     var form by remember { mutableStateOf<Flight?>(null) }
     LaunchedEffect(draft) { if (draft != null) { form = draft; onDraftShown() } }
+    val ctx = LocalContext.current
+    // Exportul Excel: utilizatorul alege unde salvează fișierul (de ex. Descărcări sau Drive).
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(XLSX_MIME)) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        val ok = runCatching { ctx.contentResolver.openOutputStream(uri)!!.use { it.write(flightsXlsx(state.flights)) } }.isSuccess
+        toast(if (ok) "Fișierul Excel a fost salvat" else "Nu am putut salva fișierul")
+    }
 
     val flights = state.flights
     val year = LocalDate.now().year.toString()
@@ -147,8 +158,10 @@ fun LogScreen(vm: MainViewModel, state: UiState, draft: Flight?, onDraftShown: (
                 }
                 Text("În $year: ${fmtDur(inYear.sumOf { it.minutes })} în ${zile(inYear.size)}.", color = p.muted, fontSize = 13.sp,
                     modifier = Modifier.padding(top = 8.dp))
-                Button(onClick = { form = Flight("", today(), filter ?: state.sites.firstOrNull()?.n ?: "", 0) },
-                    Modifier.padding(top = 12.dp)) { Text("+ Adaugă zi de zbor") }
+                Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { form = Flight("", today(), filter ?: state.sites.firstOrNull()?.n ?: "", 0) }) { Text("+ Adaugă zi de zbor") }
+                    if (flights.isNotEmpty()) OutlinedButton(onClick = { exportLauncher.launch("jurnal-zbor-${today()}.xlsx") }) { Text("Export Excel") }
+                }
                 Row(
                     Modifier.padding(top = 16.dp).fillMaxWidth().clip(RoundedCornerShape(11.dp)).border(1.dp, p.line, RoundedCornerShape(11.dp))
                 ) {
@@ -285,9 +298,11 @@ private fun FlightSheet(initial: Flight, names: List<String>, onSave: (Flight) -
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(h, { h = it.filter(Char::isDigit).take(2) }, Modifier.weight(1f), singleLine = true, label = { Text("ore") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                OutlinedTextField(m, { m = it.filter(Char::isDigit).take(2) }, Modifier.weight(1f), singleLine = true, label = { Text("minute") },
+                OutlinedTextField(m, { m = it.filter(Char::isDigit).take(3) }, Modifier.weight(1f), singleLine = true, label = { Text("minute") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
             }
+            val totalMin = (h.toIntOrNull() ?: 0) * 60 + (m.toIntOrNull() ?: 0)
+            if (totalMin > 0) Text("Total: ${fmtDur(totalMin)}", color = p.ink, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp))
             err?.let { Text(it, color = p.no, fontSize = 13.sp, modifier = Modifier.padding(top = 8.dp)) }
             Row(Modifier.padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Button(onClick = {
