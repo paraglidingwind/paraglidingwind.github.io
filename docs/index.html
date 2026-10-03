@@ -224,6 +224,7 @@ input.in,textarea.in,select.in{width:100%;min-height:44px;padding:9px 12px;borde
     <span class="k"><i class="no"></i>Nu</span>
     <span class="k"><i class="calm"></i>Calm</span>
     <span>Pictograma: cerul și tipul de nori · săgeata: încotro bate vântul · cifra mare: vânt la 10 m, mică: rafale (m/s)</span>
+    <a href="confidentialitate.html" style="color:var(--muted)">Confidențialitate</a>
   </div>
 </div>
 
@@ -1061,7 +1062,7 @@ function syncOnOpen(){
 function syncPanel(){
   if (!GOOGLE_CLIENT_ID) return '';
   const G = '<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.1C12.5 13.7 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 7l7.2 5.6c4.2-3.9 7.1-9.6 7.1-17.1z"/><path fill="#FBBC05" d="M10.6 28.6A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.6l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.7 10.7l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.2-5.6c-2 1.4-4.7 2.3-8.7 2.3-6.2 0-11.5-4.2-13.4-9.9l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>';
-  if (!gAcct) return `<div class="sync"><p><b>Jurnalul pe toate dispozitivele.</b> Conectează-te cu Google și jurnalul se păstrează în Google Drive-ul tău. Aplicația vede doar fișierul ei; nimeni altcineva nu are acces.</p>
+  if (!gAcct) return `<div class="sync"><p><b>Jurnalul pe toate dispozitivele.</b> Conectează-te cu Google și jurnalul se păstrează în Google Drive-ul tău. Aplicația vede doar fișierul ei; nimeni altcineva nu are acces. <a href="confidentialitate.html" style="color:var(--accent)">Detalii</a></p>
     <button class="gbtn" id="gSignIn" type="button">${G}Continuă cu Google</button>${syncErr ? `<p class="err">${syncErr}</p>` : ''}</div>`;
   const synced = store.get('vld.synced', 0), dirty = store.get('vld.dirty', false);
   const state = syncing ? 'Sincronizez cu Drive-ul…' : syncErr ? '' : dirty ? 'Modificări încă nesincronizate.' : synced ? `Sincronizat în Google Drive ${agoTxt(synced)}.` : '';
