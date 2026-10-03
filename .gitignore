@@ -1,0 +1,7 @@
+.DS_Store
+data/pge_raw.json
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+*.apk

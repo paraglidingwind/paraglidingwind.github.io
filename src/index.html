@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f2f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0d151b" media="(prefers-color-scheme: dark)">
+<title>Vânt la Decolare</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow+Semi+Condensed:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: o tablă de zbor. Coloană fixă cu decolările în stânga, orele curg pe orizontală, ziua se alege din bandă. */
+:root{
+  --bg:#f2f5f7; --surface:#ffffff; --sunk:#e8edf1; --ink:#13212b; --muted:#5a6a76; --line:#d5dde3;
+  --accent:#d4570c; --accent-ink:#ffffff;
+  --go:#17804a; --go-bg:#d9f0e2; --maybe:#9a6a0e; --maybe-bg:#f8ecc9; --no:#b8322b; --no-bg:#f7dcd9; --calm:#5f6f7b; --calm-bg:#e6ecf0;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-ui:"Barlow Semi Condensed","Roboto Condensed",system-ui,sans-serif;
+  --cell-w:52px; --name-w:118px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d151b; --surface:#152029; --sunk:#1b2832; --ink:#e4ebf0; --muted:#93a3ae; --line:#26343e;
+  --accent:#ff8a3d; --accent-ink:#1a0d04;
+  --go:#5fd394; --go-bg:#153526; --maybe:#e8b852; --maybe-bg:#3a2f12; --no:#f2776d; --no-bg:#3f1c1a; --calm:#93a3ae; --calm-bg:#1e2b35;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d151b; --surface:#152029; --sunk:#1b2832; --ink:#e4ebf0; --muted:#93a3ae; --line:#26343e;
+  --accent:#ff8a3d; --accent-ink:#1a0d04;
+  --go:#5fd394; --go-bg:#153526; --maybe:#e8b852; --maybe-bg:#3a2f12; --no:#f2776d; --no-bg:#3f1c1a; --calm:#93a3ae; --calm-bg:#1e2b35;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:500 15px/1.35 var(--f-ui);-webkit-text-size-adjust:100%;
+  padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+.app{display:flex;flex-direction:column;height:100%;max-width:1100px;margin:0 auto}
+
+/* Bara de sus */
+.top{display:flex;align-items:center;gap:10px;padding:10px 16px 6px}
+.brand{flex:1;min-width:0}
+.brand h1{margin:0;font:700 22px/1 var(--f-display);letter-spacing:.02em;text-transform:uppercase}
+.brand p{margin:3px 0 0;color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface)}
+.iconbtn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.iconbtn.spin svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.iconbtn.spin svg{animation:none}}
+
+.banner{margin:4px 16px 0;padding:8px 12px;border-radius:10px;background:var(--no-bg);color:var(--no);font-size:13.5px}
+
+/* Banda cu zile */
+.days{display:flex;gap:8px;overflow-x:auto;padding:8px 16px 10px;scrollbar-width:none}
+.days::-webkit-scrollbar{display:none}
+.day{flex:0 0 auto;min-width:74px;padding:7px 10px 8px;border-radius:12px;border:1px solid var(--line);background:var(--surface);text-align:left}
+.day b{display:block;font:700 15px/1.1 var(--f-display);text-transform:uppercase;letter-spacing:.03em}
+.day span{display:block;font-size:12px;color:var(--muted)}
+.day .dots{display:flex;gap:3px;margin-top:6px;flex-wrap:wrap;max-width:84px}
+.day .dots i{width:7px;height:7px;border-radius:50%;background:var(--line)}
+.day[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.day[aria-pressed="true"] b{color:var(--accent)}
+i.go{background:var(--go)!important} i.maybe{background:var(--maybe)!important} i.no{background:var(--no)!important} i.calm{background:var(--calm)!important}
+
+/* Tabla */
+.board{flex:0 1 auto;min-height:0;overflow:auto;margin:0 0 0 16px;border-top:1px solid var(--line);border-left:1px solid var(--line);border-top-left-radius:12px;background:var(--surface);overscroll-behavior:contain}
+table.grid{border-collapse:separate;border-spacing:0;font-variant-numeric:tabular-nums}
+.grid th,.grid td{padding:0;border-bottom:1px solid var(--line)}
+.grid thead th{position:sticky;top:0;z-index:2;background:var(--surface);height:30px;font:600 13px var(--f-ui);color:var(--muted);text-align:center;min-width:var(--cell-w)}
+.grid thead th.now{color:var(--accent)}
+.grid .corner,.grid tbody th{position:sticky;left:0;background:var(--surface);border-right:1px solid var(--line)}
+.grid .corner{z-index:3;text-align:left;padding-left:10px;font-size:12px}
+.grid tbody th{z-index:1;width:var(--name-w);min-width:var(--name-w);max-width:var(--name-w)}
+.site{display:flex;align-items:center;gap:7px;width:100%;height:62px;padding:0 6px 0 8px;border:0;background:none;text-align:left}
+.site .rose{flex:0 0 26px;width:26px;height:26px}
+.site b{display:block;font:600 14.5px/1.1 var(--f-ui);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.site span{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+.grid td{text-align:center}
+.cell{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:var(--cell-w);height:62px;border:0;border-left:1px solid var(--surface);padding:0}
+.cell svg{width:18px;height:18px;fill:currentColor}
+.cell b{font:700 17px/1 var(--f-ui)}
+.cell small{font-size:11.5px;line-height:1;opacity:.85}
+.cell.go{background:var(--go-bg);color:var(--go)}
+.cell.maybe{background:var(--maybe-bg);color:var(--maybe)}
+.cell.no{background:var(--no-bg);color:var(--no)}
+.cell.calm{background:var(--calm-bg);color:var(--calm)}
+.cell.na{background:none;color:var(--muted)}
+.cell .rain{font-size:10px;line-height:1}
+.empty{padding:28px 16px;color:var(--muted);max-width:40ch}
+.empty button{margin-top:10px}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;padding:8px 16px 10px;font-size:12.5px;color:var(--muted)}
+.legend .k{display:inline-flex;align-items:center;gap:5px}
+.legend .k i{width:10px;height:10px;border-radius:3px}
+
+/* Foi de jos (dialog) */
+dialog{border:0;padding:0;margin:auto auto 0;width:100%;max-width:640px;max-height:92dvh;border-radius:18px 18px 0 0;background:var(--surface);color:var(--ink)}
+dialog::backdrop{background:rgb(5 10 14 / .5)}
+.sheet{display:flex;flex-direction:column;max-height:92dvh}
+.sheet header{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.sheet header h2{flex:1;margin:0;font:700 20px/1.1 var(--f-display);text-transform:uppercase;letter-spacing:.02em}
+.sheet .body{overflow:auto;padding:12px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+.sheet h3{margin:18px 0 8px;font:700 14px var(--f-display);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.sheet h3:first-child{margin-top:4px}
+
+.verdict{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;font-weight:600}
+.verdict.go{background:var(--go-bg);color:var(--go)} .verdict.maybe{background:var(--maybe-bg);color:var(--maybe)}
+.verdict.no{background:var(--no-bg);color:var(--no)} .verdict.calm{background:var(--calm-bg);color:var(--calm)}
+.reasons{margin:8px 0 0;padding-left:18px;color:var(--ink)}
+.reasons li{margin:2px 0}
+dl.facts{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:12px 0 0;font-variant-numeric:tabular-nums}
+dl.facts dt{color:var(--muted)} dl.facts dd{margin:0;font-weight:600}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 14px;border-radius:11px;border:1px solid var(--line);background:var(--surface);font-weight:600;text-decoration:none;color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--no)}
+.btn.small{min-height:36px;padding:0 10px;font-size:14px}
+
+.list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.row{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 10px;border-bottom:1px solid var(--line);min-height:52px}
+.row:last-child{border-bottom:0}
+.row .rose{flex:0 0 24px;width:24px;height:24px}
+.row .t{flex:1;min-width:0}
+.row .t b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .t span{display:block;font-size:12px;color:var(--muted)}
+.row .acts{display:flex;gap:2px}
+.row .acts button{width:40px;height:40px;border-radius:10px;border:0;background:none;font-size:18px;color:var(--muted)}
+.row .acts button:disabled{opacity:.3}
+.row .acts button.del{color:var(--no)}
+.row .acts button.add{color:var(--accent);font-size:24px}
+
+label.f{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+input.in,textarea.in{width:100%;min-height:44px;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--sunk)}
+textarea.in{min-height:90px;font-size:12px;font-family:ui-monospace,monospace}
+.hint{font-size:12.5px;color:var(--muted);margin:4px 0 0}
+.err{font-size:13px;color:var(--no);margin:6px 0 0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:0 10px}
+.compass{display:grid;grid-template-columns:repeat(3,64px);gap:6px;margin-top:6px}
+.compass button{height:48px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-weight:700}
+.compass button[data-v="1"]{background:var(--maybe-bg);color:var(--maybe);border-color:transparent}
+.compass button[data-v="2"]{background:var(--go-bg);color:var(--go);border-color:transparent}
+.compass .mid{display:grid;place-items:center;font-size:11px;color:var(--muted);text-align:center}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;z-index:10}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brand">
+      <h1>Vânt la Decolare</h1>
+      <p id="status">Se încarcă prognoza…</p>
+    </div>
+    <button class="iconbtn" id="refresh" aria-label="Reîmprospătează prognoza"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
+    <button class="iconbtn" id="edit" aria-label="Editează lista de situri"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M14 6l4 4"/></svg></button>
+  </div>
+  <div class="banner" id="banner" hidden></div>
+  <div class="days" id="days" role="toolbar" aria-label="Alege ziua"></div>
+  <div class="board" id="board"></div>
+  <div class="legend">
+    <span class="k"><i class="go"></i>Bun</span>
+    <span class="k"><i class="maybe"></i>Marginal</span>
+    <span class="k"><i class="no"></i>Nu</span>
+    <span class="k"><i class="calm"></i>Calm</span>
+    <span>Săgeata arată încotro bate vântul · cifra mare: vânt la 10 m, mică: rafale (m/s)</span>
+  </div>
+</div>
+
+<dialog id="dlgCell"><div class="sheet">
+  <header><h2 id="cellTitle"></h2><button class="iconbtn" data-close aria-label="Închide"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+  <div class="body" id="cellBody"></div>
+</div></dialog>
+
+<dialog id="dlgEdit"><div class="sheet">
+  <header><h2>Situri și setări</h2><button class="iconbtn" data-close aria-label="Închide"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+  <div class="body">
+    <h3>Lista ta</h3>
+    <div class="list" id="myList"></div>
+
+    <h3>Adaugă de pe ParaglidingEarth</h3>
+    <input class="in" id="q" type="search" placeholder="Caută un sit din România (ex: Bunloc)" autocomplete="off">
+    <div class="list" id="results" style="margin-top:8px"></div>
+
+    <h3>Adaugă manual</h3>
+    <form id="manual" novalidate>
+      <label class="f" for="mName">Nume</label>
+      <input class="in" id="mName" placeholder="ex: Făureni" required>
+      <label class="f" for="mCoord">Coordonate decolare sau link Google Maps</label>
+      <input class="in" id="mCoord" placeholder="46.6129, 23.4350" inputmode="text" autocomplete="off">
+      <p class="hint">În Google Maps ține apăsat pe decolare, apoi copiază coordonatele afișate sus.</p>
+      <label class="f" for="mAlt">Altitudine decolare (m)</label>
+      <input class="in" id="mAlt" type="number" inputmode="numeric" placeholder="800">
+      <label class="f">Direcții bune de vânt (apasă: gri = nu, galben = marginal, verde = bun)</label>
+      <div class="compass" id="mRose"></div>
+      <p class="err" id="mErr" hidden></p>
+      <div class="actions"><button class="btn primary" type="submit">Adaugă situl</button></div>
+    </form>
+
+    <h3>Praguri</h3>
+    <div class="three">
+      <div><label class="f" for="sGood">Bun până la (m/s)</label><input class="in" id="sGood" type="number" step="0.5" inputmode="decimal"></div>
+      <div><label class="f" for="sMarg">Marginal până la</label><input class="in" id="sMarg" type="number" step="0.5" inputmode="decimal"></div>
+      <div><label class="f" for="sCalm">Calm sub</label><input class="in" id="sCalm" type="number" step="0.5" inputmode="decimal"></div>
+      <div><label class="f" for="sGust">Rafale maxime</label><input class="in" id="sGust" type="number" step="0.5" inputmode="decimal"></div>
+      <div><label class="f" for="sSpread">Rafală − vânt peste</label><input class="in" id="sSpread" type="number" step="0.5" inputmode="decimal"></div>
+      <div><label class="f" for="sRain">Ploaie peste (mm/h)</label><input class="in" id="sRain" type="number" step="0.1" inputmode="decimal"></div>
+      <div><label class="f" for="sFrom">De la ora</label><input class="in" id="sFrom" type="number" min="0" max="23" inputmode="numeric"></div>
+      <div><label class="f" for="sTo">Până la ora</label><input class="in" id="sTo" type="number" min="0" max="23" inputmode="numeric"></div>
+    </div>
+    <div class="actions"><button class="btn small" id="resetSettings" type="button">Praguri implicite</button></div>
+
+    <h3>Backup</h3>
+    <p class="hint">Lista e salvată pe acest telefon. Copiaz-o ca text ca să o muți pe alt dispozitiv sau să o păstrezi.</p>
+    <textarea class="in" id="backup" spellcheck="false" aria-label="Lista ca text"></textarea>
+    <div class="actions">
+      <button class="btn small" id="copyBackup" type="button">Copiază lista</button>
+      <button class="btn small" id="importBackup" type="button">Încarcă textul de mai sus</button>
+      <button class="btn small danger" id="resetSites" type="button">Revino la lista inițială</button>
+    </div>
+    <p class="err" id="bErr" hidden></p>
+  </div>
+</div></dialog>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const RO_SITES = __RO_SITES__;
+const DEFAULT_SITES = __DEFAULT_SITES__;
+const DIRS = ['N','NE','E','SE','S','SV','V','NV'];
+const DEFAULT_SETTINGS = {good:5, marg:7, calm:1, gust:9, spread:4, rain:0.2, from:8, to:20};
+const HOURLY = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,cloud_cover,cape,temperature_2m,wind_speed_850hPa,wind_direction_850hPa';
+const STALE_MS = 30*60*1000;
+const STATUS_TXT = {go:'Bun de zbor', maybe:'Marginal', no:'Nu e de zbor', calm:'Calm (fără vânt)', na:'Fără date'};
+const RANK = {na:-1, go:0, calm:1, maybe:2, no:3};
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d }catch{ return d } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)) }catch{} }
+};
+
+let sites = store.get('vld.sites', null) || structuredClone(DEFAULT_SITES);
+let settings = {...DEFAULT_SETTINGS, ...store.get('vld.settings', {})};
+let fc = store.get('vld.fc', null);   // {at, bySite:{key:{...}}}
+let dayIdx = 0;
+let loading = false, lastError = null;
+
+const key = s => s.lat.toFixed(4)+','+s.lon.toFixed(4);
+const saveSites = () => { store.set('vld.sites', sites); };
+
+/* ---------- reguli ---------- */
+function sectorOf(deg){ return Math.round(((deg % 360) + 360) % 360 / 45) % 8; }
+function rate(site, w){
+  if (!w || w.ws == null || w.wd == null) return {st:'na', why:[]};
+  const s = settings, why = []; let st = 'go';
+  const bump = (to, msg) => { why.push([to, msg]); if (RANK[to] > RANK[st]) st = to; };
+  if (w.ws < s.calm){
+    st = 'calm'; why.push(['calm', `Vânt slab (${w.ws.toFixed(1)} m/s), direcția nu contează`]);
+  } else {
+    const sec = sectorOf(w.wd), sc = site.o[sec];
+    if (sc === 2) why.push(['go', `Direcție bună (${DIRS[sec]})`]);
+    else if (sc === 1) bump('maybe', `Direcție marginală (${DIRS[sec]})`);
+    else bump('no', `Direcție nepotrivită (${DIRS[sec]}) pentru decolare`);
+    if (w.ws > s.marg) bump('no', `Vânt prea tare: ${w.ws.toFixed(1)} m/s (peste ${s.marg})`);
+    else if (w.ws > s.good) bump('maybe', `Vânt tare: ${w.ws.toFixed(1)} m/s (peste ${s.good})`);
+  }
+  if (w.wg != null){
+    if (w.wg > s.gust) bump('no', `Rafale ${w.wg.toFixed(1)} m/s (peste ${s.gust})`);
+    else if (w.wg - w.ws > s.spread) bump('maybe', `Turbulent: rafalele depășesc vântul cu ${(w.wg-w.ws).toFixed(1)} m/s`);
+  }
+  if (w.pr != null && w.pr > s.rain) bump('no', `Ploaie ${w.pr.toFixed(1)} mm/h`);
+  return {st, why};
+}
+
+/* ---------- date ---------- */
+async function load(force){
+  if (loading || !sites.length) { render(); return; }
+  const missing = sites.some(s => !fc || !fc.bySite[key(s)]);
+  if (!force && fc && !missing && Date.now() - fc.at < STALE_MS) { render(); return; }
+  loading = true; lastError = null; render();
+  try{
+    const p = new URLSearchParams({
+      latitude: sites.map(s => s.lat).join(','),
+      longitude: sites.map(s => s.lon).join(','),
+      elevation: sites.map(s => s.alt ?? 'nan').join(','),
+      hourly: HOURLY, wind_speed_unit:'ms', timezone:'Europe/Bucharest', forecast_days:'7'
+    });
+    const r = await fetch('https://api.open-meteo.com/v1/forecast?' + p);
+    if (!r.ok) throw new Error('Serverul de prognoză a răspuns ' + r.status);
+    let data = await r.json(); if (!Array.isArray(data)) data = [data];
+    const bySite = {};
+    data.forEach((d, i) => {
+      const h = d.hourly;
+      bySite[key(sites[i])] = {t:h.time, ws:h.wind_speed_10m, wd:h.wind_direction_10m, wg:h.wind_gusts_10m, pr:h.precipitation,
+        cc:h.cloud_cover, cape:h.cape, tt:h.temperature_2m, w8:h.wind_speed_850hPa, d8:h.wind_direction_850hPa};
+    });
+    fc = {at: Date.now(), bySite};
+    store.set('vld.fc', fc);
+  }catch(e){
+    lastError = navigator.onLine === false ? 'Ești offline.' : (e.message || 'Eroare de rețea.');
+  }finally{ loading = false; render(); }
+}
+
+function hourData(site, t){
+  const f = fc && fc.bySite[key(site)]; if (!f) return null;
+  const i = f.t.indexOf(t); if (i < 0) return null;
+  return {ws:f.ws[i], wd:f.wd[i], wg:f.wg[i], pr:f.pr[i], cc:f.cc[i], cape:f.cape[i], tt:f.tt[i], w8:f.w8[i], d8:f.d8[i]};
+}
+function dates(){
+  const f = fc && Object.values(fc.bySite)[0]; if (!f) return [];
+  const today = localDate(new Date());
+  return [...new Set(f.t.map(t => t.slice(0,10)))].filter(d => d >= today);
+}
+function localDate(d){ return new Date(d.getTime() - d.getTimezoneOffset()*6e4).toISOString().slice(0,10); }
+function hours(){ const a=[]; for (let h = settings.from; h <= settings.to; h++) a.push(String(h).padStart(2,'0')); return a; }
+
+/* ---------- desen ---------- */
+function roseSvg(o, cls){
+  let p = '';
+  for (let i = 0; i < 8; i++){
+    const a0 = (i*45 - 22.5 - 90) * Math.PI/180, a1 = (i*45 + 22.5 - 90) * Math.PI/180, R = 12.5, r = 3.5;
+    const pt = (a, rr) => (13 + rr*Math.cos(a)).toFixed(2) + ' ' + (13 + rr*Math.sin(a)).toFixed(2);
+    const fill = o[i] === 2 ? 'var(--go)' : o[i] === 1 ? 'var(--maybe)' : 'var(--line)';
+    p += `<path d="M${pt(a0,r)} L${pt(a0,R)} A${R} ${R} 0 0 1 ${pt(a1,R)} L${pt(a1,r)} A${r} ${r} 0 0 0 ${pt(a0,r)}Z" fill="${fill}" stroke="var(--surface)" stroke-width="1"/>`;
+  }
+  return `<svg class="${cls||'rose'}" viewBox="0 0 26 26" aria-hidden="true">${p}</svg>`;
+}
+const ARROW = '<path d="M12 2 19 21 12 16.5 5 21Z"/>';
+const dayName = (d, i) => {
+  if (i === 0 && d === localDate(new Date())) return 'Azi';
+  if (d === localDate(new Date(Date.now()+864e5))) return 'Mâine';
+  return new Date(d+'T12:00').toLocaleDateString('ro-RO', {weekday:'short'}).replace('.','');
+};
+function bestOfDay(site, d){
+  let best = 'na';
+  for (const h of hours()){
+    const st = rate(site, hourData(site, `${d}T${h}:00`)).st;
+    if (st === 'na') continue;
+    if (best === 'na' || RANK[st] < RANK[best]) best = st;
+  }
+  return best;
+}
+
+function render(){
+  const ds = dates();
+  if (dayIdx >= ds.length) dayIdx = 0;
+  // status
+  const st = $('#status');
+  if (loading) st.textContent = 'Se descarcă prognoza…';
+  else if (fc) st.textContent = 'Actualizat ' + agoTxt(fc.at) + ' · Open-Meteo';
+  else st.textContent = 'Fără prognoză încă';
+  $('#refresh').classList.toggle('spin', loading);
+  const b = $('#banner');
+  b.hidden = !lastError;
+  if (lastError) b.textContent = `Nu am putut descărca prognoza. ${lastError}` + (fc ? ` Arăt datele de la ${new Date(fc.at).toLocaleTimeString('ro-RO',{hour:'2-digit',minute:'2-digit'})}.` : ' Apasă ↻ pentru a încerca din nou.');
+
+  // zile
+  $('#days').innerHTML = ds.map((d, i) => {
+    const dt = new Date(d+'T12:00');
+    const dots = sites.map(s => `<i class="${bestOfDay(s, d)}"></i>`).join('');
+    return `<button class="day" data-i="${i}" aria-pressed="${i===dayIdx}"><b>${dayName(d,i)}</b><span>${dt.getDate()} ${dt.toLocaleDateString('ro-RO',{month:'short'}).replace('.','')}</span><span class="dots">${dots}</span></button>`;
+  }).join('');
+
+  // tabla
+  const board = $('#board');
+  if (!sites.length){
+    board.innerHTML = `<div class="empty">Lista e goală. Adaugă decolările la care zbori ca să le vezi vântul pe ore.<br><button class="btn primary" data-open-edit>Adaugă situri</button></div>`;
+    return;
+  }
+  if (!ds.length){
+    board.innerHTML = `<div class="empty">${loading ? 'Se descarcă prognoza pentru ' + sites.length + ' situri…' : 'Nu există încă date. Apasă ↻.'}</div>`;
+    return;
+  }
+  const d = ds[dayIdx], hs = hours();
+  const nowH = (d === localDate(new Date())) ? String(new Date().getHours()).padStart(2,'0') : null;
+  let html = `<table class="grid"><thead><tr><th class="corner">${dayName(d,dayIdx)}</th>`;
+  html += hs.map(h => `<th class="${h===nowH?'now':''}" ${h===nowH?'id="nowcol"':''}>${h}</th>`).join('') + '</tr></thead><tbody>';
+  sites.forEach((s, si) => {
+    html += `<tr><th><button class="site" data-site="${si}">${roseSvg(s.o)}<span><b>${esc(s.n)}</b><span>${s.alt ? s.alt + ' m' : ''}</span></span></button></th>`;
+    for (const h of hs){
+      const w = hourData(s, `${d}T${h}:00`), r = rate(s, w);
+      if (r.st === 'na'){ html += `<td><div class="cell na">–</div></td>`; continue; }
+      const rain = w.pr > settings.rain ? `<span class="rain">${w.pr.toFixed(1)}mm</span>` : `<small>${Math.round(w.wg)}</small>`;
+      html += `<td><button class="cell ${r.st}" data-site="${si}" data-h="${h}" aria-label="${esc(s.n)} ora ${h}: ${STATUS_TXT[r.st]}, ${DIRS[sectorOf(w.wd)]} ${w.ws.toFixed(1)} metri pe secundă">`
+        + `<svg viewBox="0 0 24 24" style="transform:rotate(${(w.wd+180)%360}deg)">${ARROW}</svg><b>${Math.round(w.ws)}</b>${rain}</button></td>`;
+    }
+    html += '</tr>';
+  });
+  board.innerHTML = html + '</tbody></table>';
+}
+function agoTxt(at){
+  const m = Math.round((Date.now() - at)/6e4);
+  if (m < 1) return 'acum';
+  if (m < 60) return `acum ${m} min`;
+  return new Date(at).toLocaleString('ro-RO', {weekday:'short', hour:'2-digit', minute:'2-digit'});
+}
+function scrollToNow(){
+  const c = document.getElementById('nowcol'), board = $('#board');
+  if (c) board.scrollLeft = Math.max(0, c.offsetLeft - board.querySelector('.corner').offsetWidth - 52);
+}
+
+/* ---------- detalii ---------- */
+function openCell(si, h){
+  const s = sites[si], d = dates()[dayIdx], w = hourData(s, `${d}T${h}:00`), r = rate(s, w);
+  $('#cellTitle').textContent = `${s.n} · ${h}:00`;
+  const dir = deg => `${DIRS[sectorOf(deg)]} (${Math.round(deg)}°)`;
+  $('#cellBody').innerHTML = `
+    <div class="verdict ${r.st}"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" style="transform:rotate(${(w.wd+180)%360}deg)">${ARROW}</svg>${STATUS_TXT[r.st]}</div>
+    <ul class="reasons">${r.why.map(([, m]) => `<li>${esc(m)}</li>`).join('')}</ul>
+    <dl class="facts">
+      <dt>Vânt la 10 m</dt><dd>${w.ws.toFixed(1)} m/s din ${dir(w.wd)}</dd>
+      <dt>Rafale</dt><dd>${w.wg != null ? w.wg.toFixed(1) + ' m/s' : '–'}</dd>
+      <dt>Vânt la ~1500 m</dt><dd>${w.w8 != null ? w.w8.toFixed(1) + ' m/s din ' + dir(w.d8) : '–'}</dd>
+      <dt>Nori</dt><dd>${w.cc != null ? w.cc + ' %' : '–'}</dd>
+      <dt>Ploaie</dt><dd>${w.pr != null ? w.pr.toFixed(1) + ' mm/h' : '–'}</dd>
+      <dt>CAPE</dt><dd>${w.cape != null ? Math.round(w.cape) + ' J/kg' + (w.cape > 800 ? ' · risc de dezvoltări' : '') : '–'}</dd>
+      <dt>Temperatură</dt><dd>${w.tt != null ? w.tt.toFixed(1) + ' °C' : '–'}</dd>
+      <dt>Decolare</dt><dd>${s.o.map((v, i) => v === 2 ? DIRS[i] : v === 1 ? DIRS[i].toLowerCase() : '').filter(Boolean).join(' ') || '–'}${s.alt ? ' · ' + s.alt + ' m' : ''}</dd>
+    </dl>
+    ${siteLinks(s)}`;
+  $('#dlgCell').showModal();
+}
+function openSite(si){
+  const s = sites[si], ds = dates();
+  $('#cellTitle').textContent = s.n;
+  const rows = ds.map((d, i) => `<div class="row"><i class="${bestOfDay(s, d)}" style="width:12px;height:12px;border-radius:50%;background:var(--line)"></i><div class="t"><b>${dayName(d,i)} ${new Date(d+'T12:00').getDate()}</b><span>${STATUS_TXT[bestOfDay(s, d)]} (cea mai bună oră)</span></div></div>`).join('');
+  $('#cellBody').innerHTML = `<div style="display:flex;gap:12px;align-items:center">${roseSvg(s.o,'rose big').replace('class="rose big"','class="rose" width="72" height="72"')}
+    <div><b>${s.alt ? s.alt + ' m' : 'Altitudine necunoscută'}</b><br><span style="color:var(--muted)">${s.lat.toFixed(4)}, ${s.lon.toFixed(4)}</span></div></div>
+    <h3>Săptămâna</h3><div class="list">${rows}</div>${siteLinks(s)}`;
+  $('#dlgCell').showModal();
+}
+function siteLinks(s){
+  return `<div class="links">
+    <a class="btn small" target="_blank" rel="noopener" href="https://www.windy.com/${s.lat}/${s.lon}?${s.lat},${s.lon},12">Windy</a>
+    <a class="btn small" target="_blank" rel="noopener" href="https://www.meteoblue.com/ro/vreme/s%C4%83pt%C4%83m%C3%A2na/${s.lat}N${s.lon}E">Meteoblue</a>
+    <a class="btn small" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${s.lat},${s.lon}">Hartă</a></div>`;
+}
+
+/* ---------- editare ---------- */
+let manualRose = [0,0,0,0,0,0,0,0];
+function openEdit(){
+  renderMyList(); renderResults(); renderManualRose(); fillSettings();
+  $('#backup').value = JSON.stringify(sites);
+  $('#bErr').hidden = true;
+  $('#dlgEdit').showModal();
+}
+function renderMyList(){
+  $('#myList').innerHTML = sites.length ? sites.map((s, i) => `<div class="row">${roseSvg(s.o)}<div class="t"><b>${esc(s.n)}</b><span>${s.alt ? s.alt+' m · ' : ''}${s.lat.toFixed(3)}, ${s.lon.toFixed(3)}</span></div>
+    <div class="acts"><button data-mv="${i}" data-d="-1" aria-label="Mută ${esc(s.n)} mai sus" ${i===0?'disabled':''}>↑</button><button data-mv="${i}" data-d="1" aria-label="Mută ${esc(s.n)} mai jos" ${i===sites.length-1?'disabled':''}>↓</button><button class="del" data-del="${i}" aria-label="Șterge ${esc(s.n)}">✕</button></div></div>`).join('')
+    : '<div class="row"><div class="t"><span>Niciun sit în listă.</span></div></div>';
+}
+const norm = t => t.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+function renderResults(){
+  const q = norm($('#q').value.trim()), have = new Set(sites.map(key));
+  const list = RO_SITES.filter(s => !have.has(key(s)) && (!q || norm(s.n).includes(q))).slice(0, q ? 40 : 8);
+  $('#results').innerHTML = list.length ? list.map(s => `<div class="row">${roseSvg(s.o)}<div class="t"><b>${esc(s.n)}</b><span>${s.alt ? s.alt+' m · ' : ''}${s.lat.toFixed(3)}, ${s.lon.toFixed(3)}</span></div>
+    <div class="acts"><button class="add" data-add="${RO_SITES.indexOf(s)}" aria-label="Adaugă ${esc(s.n)}">+</button></div></div>`).join('')
+    : '<div class="row"><div class="t"><span>Niciun rezultat. Îl poți adăuga manual mai jos.</span></div></div>';
+}
+function renderManualRose(){
+  const order = [7,0,1,6,-1,2,5,4,3];
+  $('#mRose').innerHTML = order.map(i => i < 0 ? '<div class="mid">vântul<br>bate din</div>'
+    : `<button type="button" data-rose="${i}" data-v="${manualRose[i]}" aria-label="${DIRS[i]}: ${['nu','marginal','bun'][manualRose[i]]}">${DIRS[i]}</button>`).join('');
+}
+function parseCoords(str){
+  let s = str; try{ s = decodeURIComponent(str) }catch{}
+  const m = s.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) || s.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
+    || s.match(/[?&](?:q|query|ll|center)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/) || s.match(/(-?\d{1,2}\.\d+)\s*[,;\s]\s*(-?\d{1,3}\.\d+)/);
+  if (!m) return null;
+  const lat = +m[1], lon = +m[2];
+  return (Math.abs(lat) <= 90 && Math.abs(lon) <= 180) ? {lat, lon} : null;
+}
+const SETTING_IDS = {good:'sGood', marg:'sMarg', calm:'sCalm', gust:'sGust', spread:'sSpread', rain:'sRain', from:'sFrom', to:'sTo'};
+function fillSettings(){ for (const [k, id] of Object.entries(SETTING_IDS)) $('#'+id).value = settings[k]; }
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 2200); }
+
+/* ---------- evenimente ---------- */
+document.addEventListener('click', e => {
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.matches('[data-close]')) return t.closest('dialog').close();
+  if (t.matches('[data-open-edit]') || t.id === 'edit') return openEdit();
+  if (t.id === 'refresh') return load(true);
+  if (t.matches('.day')){ dayIdx = +t.dataset.i; render(); if (dayIdx === 0) scrollToNow(); else $('#board').scrollLeft = 0; return; }
+  if (t.matches('.cell[data-h]')) return openCell(+t.dataset.site, t.dataset.h);
+  if (t.matches('.site')) return openSite(+t.dataset.site);
+  if (t.dataset.mv != null){ const i = +t.dataset.mv, j = i + +t.dataset.d; [sites[i], sites[j]] = [sites[j], sites[i]]; saveSites(); renderMyList(); render(); return; }
+  if (t.dataset.del != null){ const [s] = sites.splice(+t.dataset.del, 1); saveSites(); renderMyList(); renderResults(); render(); toast(`${s.n} a fost șters`); return; }
+  if (t.dataset.add != null){ const s = structuredClone(RO_SITES[+t.dataset.add]); sites.push(s); saveSites(); renderMyList(); renderResults(); toast(`${s.n} a fost adăugat`); load(); return; }
+  if (t.dataset.rose != null){ const i = +t.dataset.rose; manualRose[i] = (manualRose[i] + 1) % 3; renderManualRose(); $(`[data-rose="${i}"]`).focus(); return; }
+  if (t.id === 'resetSettings'){ settings = {...DEFAULT_SETTINGS}; store.set('vld.settings', settings); fillSettings(); render(); toast('Praguri implicite'); return; }
+  if (t.id === 'copyBackup'){
+    const ta = $('#backup'); ta.value = JSON.stringify(sites);
+    navigator.clipboard?.writeText(ta.value).then(() => toast('Lista a fost copiată'), () => { ta.select(); toast('Selectează și copiază textul'); });
+    return;
+  }
+  if (t.id === 'importBackup'){
+    const err = $('#bErr');
+    try{
+      const arr = JSON.parse($('#backup').value);
+      if (!Array.isArray(arr) || !arr.every(s => s && typeof s.n === 'string' && isFinite(s.lat) && isFinite(s.lon) && Array.isArray(s.o) && s.o.length === 8)) throw 0;
+      sites = arr; saveSites(); err.hidden = true; renderMyList(); renderResults(); toast(`Am încărcat ${sites.length} situri`); load();
+    }catch{ err.textContent = 'Textul nu e o listă validă. Lipește exact textul copiat cu „Copiază lista”.'; err.hidden = false; }
+    return;
+  }
+  if (t.id === 'resetSites'){
+    if (t.dataset.armed){ sites = structuredClone(DEFAULT_SITES); saveSites(); renderMyList(); renderResults(); toast('Lista inițială a fost refăcută'); load(); delete t.dataset.armed; t.textContent = 'Revino la lista inițială'; }
+    else { t.dataset.armed = 1; t.textContent = 'Apasă din nou pentru confirmare'; setTimeout(() => { delete t.dataset.armed; t.textContent = 'Revino la lista inițială'; }, 4000); }
+  }
+});
+$('#q').addEventListener('input', renderResults);
+$('#manual').addEventListener('submit', e => {
+  e.preventDefault();
+  const err = $('#mErr'), name = $('#mName').value.trim(), c = parseCoords($('#mCoord').value), alt = parseInt($('#mAlt').value, 10);
+  let msg = '';
+  if (!name) msg = 'Scrie un nume pentru sit.';
+  else if (!c) msg = /goo\.gl|maps\.app/.test($('#mCoord').value) ? 'Linkurile scurte Google Maps nu conțin coordonatele. Deschide linkul, ține apăsat pe decolare și copiază coordonatele.' : 'Coordonatele nu sunt valide. Exemplu: 46.6129, 23.4350';
+  else if (!manualRose.some(v => v > 0)) msg = 'Alege cel puțin o direcție bună de vânt.';
+  if (msg){ err.textContent = msg; err.hidden = false; return; }
+  err.hidden = true;
+  sites.push({n:name, lat:+c.lat.toFixed(5), lon:+c.lon.toFixed(5), alt: isFinite(alt) ? alt : null, o:[...manualRose]});
+  saveSites(); manualRose = [0,0,0,0,0,0,0,0]; e.target.reset(); renderManualRose(); renderMyList(); toast(`${name} a fost adăugat`); load();
+});
+for (const [k, id] of Object.entries(SETTING_IDS)){
+  $('#'+id).addEventListener('change', e => {
+    const v = parseFloat(e.target.value);
+    if (!isFinite(v)) return fillSettings();
+    settings[k] = (k === 'from' || k === 'to') ? Math.min(23, Math.max(0, Math.round(v))) : v;
+    if (settings.from > settings.to) [settings.from, settings.to] = [settings.to, settings.from];
+    store.set('vld.settings', settings); fillSettings(); render();
+  });
+}
+for (const d of document.querySelectorAll('dialog')){
+  d.addEventListener('click', e => { if (e.target === d) d.close(); });
+}
+$('#dlgEdit').addEventListener('close', () => render());
+document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
+setInterval(() => { if (!loading && fc) $('#status').textContent = 'Actualizat ' + agoTxt(fc.at) + ' · Open-Meteo'; }, 60000);
+
+render(); scrollToNow();
+load().then(scrollToNow);
+</script>
+</body>
+</html>
