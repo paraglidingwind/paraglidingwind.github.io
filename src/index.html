@@ -17,6 +17,7 @@
 :root{
   --bg:#f2f5f7; --surface:#ffffff; --sunk:#e8edf1; --ink:#13212b; --muted:#5a6a76; --line:#d5dde3;
   --accent:#d4570c; --accent-ink:#ffffff;
+  --sun:#d99a06; --water:#2a76cf; --sky:#4f5f6b;
   --go:#17804a; --go-bg:#d9f0e2; --maybe:#9a6a0e; --maybe-bg:#f8ecc9; --no:#b8322b; --no-bg:#f7dcd9; --calm:#5f6f7b; --calm-bg:#e6ecf0;
   --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --f-ui:"Barlow Semi Condensed","Roboto Condensed",system-ui,sans-serif;
@@ -26,11 +27,13 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0d151b; --surface:#152029; --sunk:#1b2832; --ink:#e4ebf0; --muted:#93a3ae; --line:#26343e;
   --accent:#ff8a3d; --accent-ink:#1a0d04;
+  --sun:#f2c14e; --water:#6aa8f0; --sky:#b4c2cc;
   --go:#5fd394; --go-bg:#153526; --maybe:#e8b852; --maybe-bg:#3a2f12; --no:#f2776d; --no-bg:#3f1c1a; --calm:#93a3ae; --calm-bg:#1e2b35;
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0d151b; --surface:#152029; --sunk:#1b2832; --ink:#e4ebf0; --muted:#93a3ae; --line:#26343e;
   --accent:#ff8a3d; --accent-ink:#1a0d04;
+  --sun:#f2c14e; --water:#6aa8f0; --sky:#b4c2cc;
   --go:#5fd394; --go-bg:#153526; --maybe:#e8b852; --maybe-bg:#3a2f12; --no:#f2776d; --no-bg:#3f1c1a; --calm:#93a3ae; --calm-bg:#1e2b35;
   color-scheme:dark}
 
@@ -84,7 +87,14 @@ table.grid{border-collapse:separate;border-spacing:0;font-variant-numeric:tabula
 .site span{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
 .grid td{text-align:center}
 .cell{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:var(--cell-w);height:62px;border:0;border-left:1px solid var(--surface);padding:0}
-.cell svg{width:18px;height:18px;fill:currentColor}
+.cell .ic{display:flex;align-items:center;gap:3px}
+.cell .arr{width:17px;height:17px;fill:currentColor}
+.sky{width:19px;height:19px;flex:0 0 auto}
+.sky path{fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.sky .ink{stroke:var(--sky)} .sky .sun{stroke:var(--sun)} .sky .sun.f{fill:var(--sun);stroke:none} .sky .water{stroke:var(--water)}
+.skyrow{display:flex;align-items:center;gap:10px}
+.skyrow .sky{width:30px;height:30px}
+.note{margin:6px 0 0;color:var(--muted);font-size:13.5px}
 .cell b{font:700 17px/1 var(--f-ui)}
 .cell small{font-size:11.5px;line-height:1;opacity:.85}
 .cell.go{background:var(--go-bg);color:var(--go)}
@@ -170,7 +180,7 @@ textarea.in{min-height:90px;font-size:12px;font-family:ui-monospace,monospace}
     <span class="k"><i class="maybe"></i>Marginal</span>
     <span class="k"><i class="no"></i>Nu</span>
     <span class="k"><i class="calm"></i>Calm</span>
-    <span>Săgeata arată încotro bate vântul · cifra mare: vânt la 10 m, mică: rafale (m/s)</span>
+    <span>Pictograma: cerul și tipul de nori · săgeata: încotro bate vântul · cifra mare: vânt la 10 m, mică: rafale (m/s)</span>
   </div>
 </div>
 
@@ -234,9 +244,10 @@ textarea.in{min-height:90px;font-size:12px;font-family:ui-monospace,monospace}
 <script>
 const RO_SITES = __RO_SITES__;
 const DEFAULT_SITES = __DEFAULT_SITES__;
+const SKY_ICONS = __SKY_ICONS__;
 const DIRS = ['N','NE','E','SE','S','SV','V','NV'];
 const DEFAULT_SETTINGS = {good:5, marg:7, calm:1, gust:9, spread:4, rain:0.2, from:8, to:20};
-const HOURLY = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,cloud_cover,cape,temperature_2m,wind_speed_850hPa,wind_direction_850hPa';
+const HOURLY = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,cloud_cover,cape,temperature_2m,wind_speed_850hPa,wind_direction_850hPa,weather_code,cloud_cover_low,cloud_cover_mid,cloud_cover_high,is_day';
 const STALE_MS = 30*60*1000;
 const STATUS_TXT = {go:'Bun de zbor', maybe:'Marginal', no:'Nu e de zbor', calm:'Calm (fără vânt)', na:'Fără date'};
 const RANK = {na:-1, go:0, calm:1, maybe:2, no:3};
@@ -250,7 +261,7 @@ const store = {
 
 let sites = store.get('vld.sites', null) || structuredClone(DEFAULT_SITES);
 let settings = {...DEFAULT_SETTINGS, ...store.get('vld.settings', {})};
-let fc = store.get('vld.fc', null);   // {at, bySite:{key:{...}}}
+let fc = store.get('vld.fc2', null);   // {at, bySite:{key:{...}}}
 let dayIdx = 0;
 let loading = false, lastError = null;
 
@@ -281,6 +292,51 @@ function rate(site, w){
   return {st, why};
 }
 
+/* ---------- cer ---------- */
+const WMO = {0:'Senin',1:'Predominant senin',2:'Parțial noros',3:'Înnorat',45:'Ceață',48:'Ceață cu chiciură',
+  51:'Burniță slabă',53:'Burniță',55:'Burniță densă',56:'Burniță înghețată',57:'Burniță înghețată',
+  61:'Ploaie slabă',63:'Ploaie',65:'Ploaie puternică',66:'Ploaie înghețată',67:'Ploaie înghețată',
+  71:'Ninsoare slabă',73:'Ninsoare',75:'Ninsoare puternică',77:'Grăunțe de zăpadă',
+  80:'Averse slabe',81:'Averse',82:'Averse violente',85:'Averse de ninsoare',86:'Averse de ninsoare',
+  95:'Furtună',96:'Furtună cu grindină',99:'Furtună cu grindină'};
+const CLOUD_NOTES = {
+  'Cumulus':'Nori de convecție: semn de termice.',
+  'Cumulus congestus':'Dezvoltare verticală puternică: risc de supradezvoltare și averse.',
+  'Cumulonimbus':'Nor de furtună: nu se zboară.',
+  'Stratocumulus':'Strat de nori joși: termice slabe.',
+  'Stratus':'Plafon jos și uniform.',
+  'Altocumulus':'Nori la altitudine medie.',
+  'Altostratus':'Strat la altitudine medie: umbrește solul, termice slabe.',
+  'Cirrus':'Nori înalți subțiri: adesea anunță un front.',
+  'Cirrostratus':'Văl înalt: slăbește termicele.'};
+/* Aceeași clasificare ca Sky.kt din aplicația Android. */
+function sky(w){
+  const code = w.code ?? -1, cc = w.cc ?? 0, lo = w.lo ?? 0, mi = w.mi ?? 0, hi = w.hi ?? 0, cape = w.cape ?? 0, day = w.day !== 0;
+  let type = null; const top = Math.max(lo, mi, hi);
+  if (top >= 20){
+    if (lo === top) type = (day && cape >= 200) ? (cape >= 1000 ? 'Cumulus congestus' : 'Cumulus') : (lo >= 80 ? 'Stratus' : 'Stratocumulus');
+    else if (mi === top) type = mi >= 80 ? 'Altostratus' : 'Altocumulus';
+    else type = hi >= 80 ? 'Cirrostratus' : 'Cirrus';
+  }
+  let icon, label;
+  if (code >= 95){ icon = 'thunder'; label = WMO[code]; type = 'Cumulonimbus'; }
+  else if ([71,73,75,77,85,86].includes(code)){ icon = 'snow'; label = WMO[code]; }
+  else if (code >= 51 && code <= 82){ icon = 'rain'; label = WMO[code]; }
+  else if (code === 45 || code === 48){ icon = 'fog'; label = WMO[code]; }
+  else {
+    if (cc < 15){ icon = day ? 'sun' : 'moon'; label = 'Senin'; }
+    else if (cc < 50){ icon = day ? 'partly' : 'cloud'; label = 'Parțial noros'; }
+    else if (cc < 85){ icon = 'cloud'; label = 'Mai mult noros'; }
+    else { icon = 'overcast'; label = 'Înnorat'; }
+    if (day && type && type.startsWith('Cumulus') && cc < 85) icon = 'cumulus';
+    else if (day && (type === 'Cirrus' || type === 'Cirrostratus') && lo < 20 && mi < 20) icon = 'cirrus';
+  }
+  return {icon, label: label || 'Necunoscut', type};
+}
+function skySvg(icon){
+  return `<svg class="sky" viewBox="0 0 24 24" aria-hidden="true">${(SKY_ICONS[icon] || []).map(p => `<path d="${p.d}" class="${p.r}${p.f ? ' f' : ''}"/>`).join('')}</svg>`;
+}
+
 /* ---------- date ---------- */
 async function load(force){
   if (loading || !sites.length) { render(); return; }
@@ -301,10 +357,11 @@ async function load(force){
     data.forEach((d, i) => {
       const h = d.hourly;
       bySite[key(sites[i])] = {t:h.time, ws:h.wind_speed_10m, wd:h.wind_direction_10m, wg:h.wind_gusts_10m, pr:h.precipitation,
-        cc:h.cloud_cover, cape:h.cape, tt:h.temperature_2m, w8:h.wind_speed_850hPa, d8:h.wind_direction_850hPa};
+        cc:h.cloud_cover, cape:h.cape, tt:h.temperature_2m, w8:h.wind_speed_850hPa, d8:h.wind_direction_850hPa,
+        code:h.weather_code, lo:h.cloud_cover_low, mi:h.cloud_cover_mid, hi:h.cloud_cover_high, day:h.is_day};
     });
     fc = {at: Date.now(), bySite};
-    store.set('vld.fc', fc);
+    store.set('vld.fc2', fc);
   }catch(e){
     lastError = navigator.onLine === false ? 'Ești offline.' : (e.message || 'Eroare de rețea.');
   }finally{ loading = false; render(); }
@@ -313,7 +370,8 @@ async function load(force){
 function hourData(site, t){
   const f = fc && fc.bySite[key(site)]; if (!f) return null;
   const i = f.t.indexOf(t); if (i < 0) return null;
-  return {ws:f.ws[i], wd:f.wd[i], wg:f.wg[i], pr:f.pr[i], cc:f.cc[i], cape:f.cape[i], tt:f.tt[i], w8:f.w8[i], d8:f.d8[i]};
+  return {ws:f.ws[i], wd:f.wd[i], wg:f.wg[i], pr:f.pr[i], cc:f.cc[i], cape:f.cape[i], tt:f.tt[i], w8:f.w8[i], d8:f.d8[i],
+    code:f.code?.[i], lo:f.lo?.[i], mi:f.mi?.[i], hi:f.hi?.[i], day:f.day?.[i]};
 }
 function dates(){
   const f = fc && Object.values(fc.bySite)[0]; if (!f) return [];
@@ -390,8 +448,8 @@ function render(){
       const w = hourData(s, `${d}T${h}:00`), r = rate(s, w);
       if (r.st === 'na'){ html += `<td><div class="cell na">–</div></td>`; continue; }
       const rain = w.pr > settings.rain ? `<span class="rain">${w.pr.toFixed(1)}mm</span>` : `<small>${Math.round(w.wg)}</small>`;
-      html += `<td><button class="cell ${r.st}" data-site="${si}" data-h="${h}" aria-label="${esc(s.n)} ora ${h}: ${STATUS_TXT[r.st]}, ${DIRS[sectorOf(w.wd)]} ${w.ws.toFixed(1)} metri pe secundă">`
-        + `<svg viewBox="0 0 24 24" style="transform:rotate(${(w.wd+180)%360}deg)">${ARROW}</svg><b>${Math.round(w.ws)}</b>${rain}</button></td>`;
+      html += `<td><button class="cell ${r.st}" data-site="${si}" data-h="${h}" aria-label="${esc(s.n)} ora ${h}: ${STATUS_TXT[r.st]}, ${DIRS[sectorOf(w.wd)]} ${w.ws.toFixed(1)} metri pe secundă, ${sky(w).label}">`
+        + `<span class="ic">${skySvg(sky(w).icon)}<svg class="arr" viewBox="0 0 24 24" style="transform:rotate(${(w.wd+180)%360}deg)">${ARROW}</svg></span><b>${Math.round(w.ws)}</b>${rain}</button></td>`;
     }
     html += '</tr>';
   });
@@ -410,17 +468,20 @@ function scrollToNow(){
 
 /* ---------- detalii ---------- */
 function openCell(si, h){
-  const s = sites[si], d = dates()[dayIdx], w = hourData(s, `${d}T${h}:00`), r = rate(s, w);
+  const s = sites[si], d = dates()[dayIdx], w = hourData(s, `${d}T${h}:00`), r = rate(s, w), k = sky(w);
   $('#cellTitle').textContent = `${s.n} · ${h}:00`;
   const dir = deg => `${DIRS[sectorOf(deg)]} (${Math.round(deg)}°)`;
   $('#cellBody').innerHTML = `
     <div class="verdict ${r.st}"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" style="transform:rotate(${(w.wd+180)%360}deg)">${ARROW}</svg>${STATUS_TXT[r.st]}</div>
     <ul class="reasons">${r.why.map(([, m]) => `<li>${esc(m)}</li>`).join('')}</ul>
+    <h3>Cer</h3>
+    <div class="skyrow">${skySvg(k.icon)}<div><b>${esc(k.label)}</b>${k.type ? `<br><span style="color:var(--muted)">${esc(k.type)}</span>` : ''}</div></div>
+    ${k.type && CLOUD_NOTES[k.type] ? `<p class="note">${CLOUD_NOTES[k.type]}</p>` : ''}
     <dl class="facts">
       <dt>Vânt la 10 m</dt><dd>${w.ws.toFixed(1)} m/s din ${dir(w.wd)}</dd>
       <dt>Rafale</dt><dd>${w.wg != null ? w.wg.toFixed(1) + ' m/s' : '–'}</dd>
       <dt>Vânt la ~1500 m</dt><dd>${w.w8 != null ? w.w8.toFixed(1) + ' m/s din ' + dir(w.d8) : '–'}</dd>
-      <dt>Nori</dt><dd>${w.cc != null ? w.cc + ' %' : '–'}</dd>
+      <dt>Nori</dt><dd>${w.cc != null ? w.cc + ' %' : '–'}${w.lo != null ? ` <span style="color:var(--muted);font-weight:500">(jos ${w.lo} · mediu ${w.mi} · sus ${w.hi})</span>` : ''}</dd>
       <dt>Ploaie</dt><dd>${w.pr != null ? w.pr.toFixed(1) + ' mm/h' : '–'}</dd>
       <dt>CAPE</dt><dd>${w.cape != null ? Math.round(w.cape) + ' J/kg' + (w.cape > 800 ? ' · risc de dezvoltări' : '') : '–'}</dd>
       <dt>Temperatură</dt><dd>${w.tt != null ? w.tt.toFixed(1) + ' °C' : '–'}</dd>
