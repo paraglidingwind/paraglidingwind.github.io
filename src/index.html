@@ -297,6 +297,7 @@ input.in,textarea.in,select.in{width:100%;min-height:44px;padding:9px 12px;borde
   </div>
 </div></dialog>
 
+<input type="file" id="importFile" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
 <div class="toast" id="toast" hidden></div>
 
 <script>
@@ -685,7 +686,8 @@ function renderLog(){
   const places = new Set(flights.map(f => f.site)).size;
   let html = `<div class="stats"><div><b>${fmtDur(total(flights))}</b><span>în aer</span></div><div><b>${flights.length}</b><span>${flights.length === 1 ? 'zi de zbor' : 'zile de zbor'}</span></div><div><b>${places}</b><span>${places === 1 ? 'locație' : 'locații'}</span></div></div>
     <p class="hint" style="margin:8px 0 0">În ${year}: ${fmtDur(total(inYear))} în ${zile(inYear.length)}.</p>
-    <div class="actions"><button class="btn primary" id="addFlight" type="button">+ Adaugă zi de zbor</button>${flights.length ? '<button class="btn" id="exportXlsx" type="button">Export Excel</button>' : ''}</div>
+    <div class="actions"><button class="btn primary" id="addFlight" type="button">+ Adaugă zi de zbor</button>${flights.length ? '<button class="btn" id="exportXlsx" type="button">Export Excel</button>' : ''}<button class="btn" id="importXlsx" type="button">Import Excel</button></div>
+    <p class="hint" style="margin:6px 0 0">Exportul e și backup: păstrează fișierul și încarcă-l cu „Import Excel” după ce schimbi telefonul. Se adaugă doar ce lipsește.</p>
     <div class="seg" role="tablist"><button role="tab" type="button" aria-selected="${logView === 'days'}" data-view="days">Pe zile</button><button role="tab" type="button" aria-selected="${logView === 'sites'}" data-view="sites">Pe locații</button></div>`;
   if (!flights.length){
     html += `<p class="hint" style="margin-top:16px">Încă nu ai nimic notat. Apasă „Adaugă zi de zbor”, sau „Am zburat aici” din pagina unei locații. Poți trece și zborurile mai vechi.</p>`;
@@ -764,7 +766,7 @@ $('#flForm').addEventListener('submit', e => {
    Aceeași structură ca Xlsx.kt din aplicația Android. */
 const xmlEsc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const excelDate = d => { const [y, m, dd] = d.split('-').map(Number); return (Date.UTC(y, m - 1, dd) - Date.UTC(1899, 11, 30)) / 864e5; };
-const col = i => 'ABCD'[i];
+const col = i => 'ABCDEFG'[i];
 function xlRow(r, cells){
   return `<row r="${r}">` + cells.map((c, i) => {
     const ref = col(i) + r;
@@ -780,7 +782,7 @@ function xlSheet(widths, rows){
     + '<sheetData>' + rows.map((c, i) => xlRow(i + 1, c)).join('') + '</sheetData></worksheet>';
 }
 /* Stiluri: 1 = antet (bold), 2 = dată zz.ll.aaaa, 3 = durată [h]:mm, 4 = durată bold. */
-function xlsxParts(list){
+function xlsxParts(list, siteList){
   const H = s => ({v: s, s: 1});
   const days = [...list].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
   const n = days.length;
@@ -791,16 +793,21 @@ function xlsxParts(list){
   for (const f of list){ const x = by.get(f.site) || {site: f.site, n: 0, m: 0, last: ''}; x.n++; x.m += f.minutes; if (f.date > x.last) x.last = f.date; by.set(f.site, x); }
   const s2 = [[H('Locație'), H('Zile de zbor'), H('Timp în aer'), H('Ultima zi')],
     ...[...by.values()].sort((a, b) => b.m - a.m).map(x => [{v: x.site}, {v: x.n}, {v: x.m / 1440, s: 3}, {v: excelDate(x.last), s: 2}])];
+  const dirsOf = (o, v) => o.map((x, i) => x === v ? DIRS[i] : '').filter(Boolean).join(', ');
+  const s3 = [[H('Nume'), H('Latitudine'), H('Longitudine'), H('Altitudine'), H('Direcții bune'), H('Marginal'), H('Holfuy')],
+    ...siteList.map(st => { const hf = st.hf ?? -1;
+      return [{v: st.n}, {v: st.lat}, {v: st.lon}, st.alt != null ? {v: st.alt} : {v: ''}, {v: dirsOf(st.o, 2)}, {v: dirsOf(st.o, 1)}, hf > 0 ? {v: hf} : {v: hf === 0 ? 'fără' : ''}]; })];
   const NS = 'http://schemas.openxmlformats.org', X = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
   const WS = 'application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml';
   return [
-    ['[Content_Types].xml', X + `<Types xmlns="${NS}/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="${WS}"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="${WS}"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`],
+    ['[Content_Types].xml', X + `<Types xmlns="${NS}/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="${WS}"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="${WS}"/><Override PartName="/xl/worksheets/sheet3.xml" ContentType="${WS}"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`],
     ['_rels/.rels', X + `<Relationships xmlns="${NS}/package/2006/relationships"><Relationship Id="rId1" Type="${NS}/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
-    ['xl/workbook.xml', X + `<workbook xmlns="${NS}/spreadsheetml/2006/main" xmlns:r="${NS}/officeDocument/2006/relationships"><sheets><sheet name="Zile de zbor" sheetId="1" r:id="rId1"/><sheet name="Pe locații" sheetId="2" r:id="rId2"/></sheets><calcPr calcId="0" fullCalcOnLoad="1"/></workbook>`],
-    ['xl/_rels/workbook.xml.rels', X + `<Relationships xmlns="${NS}/package/2006/relationships"><Relationship Id="rId1" Type="${NS}/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="${NS}/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="${NS}/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+    ['xl/workbook.xml', X + `<workbook xmlns="${NS}/spreadsheetml/2006/main" xmlns:r="${NS}/officeDocument/2006/relationships"><sheets><sheet name="Zile de zbor" sheetId="1" r:id="rId1"/><sheet name="Pe locații" sheetId="2" r:id="rId2"/><sheet name="Situri" sheetId="3" r:id="rId3"/></sheets><calcPr calcId="0" fullCalcOnLoad="1"/></workbook>`],
+    ['xl/_rels/workbook.xml.rels', X + `<Relationships xmlns="${NS}/package/2006/relationships"><Relationship Id="rId1" Type="${NS}/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="${NS}/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="${NS}/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet3.xml"/><Relationship Id="rId4" Type="${NS}/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
     ['xl/styles.xml', X + `<styleSheet xmlns="${NS}/spreadsheetml/2006/main"><numFmts count="2"><numFmt numFmtId="164" formatCode="dd.mm.yyyy"/><numFmt numFmtId="165" formatCode="[h]:mm"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="5"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="165" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`],
     ['xl/worksheets/sheet1.xml', xlSheet([12, 26, 12, 10], s1)],
     ['xl/worksheets/sheet2.xml', xlSheet([26, 13, 12, 12], s2)],
+    ['xl/worksheets/sheet3.xml', xlSheet([24, 11, 11, 11, 18, 18, 9], s3)],
   ];
 }
 const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++){ let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
@@ -824,8 +831,118 @@ function zipBlob(files, type){
   e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true); e.setUint32(12, size, true); e.setUint32(16, off, true);
   return new Blob([...parts, ...central, new Uint8Array(e.buffer)], {type});
 }
+/* ---------- import Excel ----------
+   Citește un export (al nostru sau re-salvat din Excel). Același algoritm ca readXlsx() din Xlsx.kt. */
+async function unzip(buf){
+  const dv = new DataView(buf), u8 = new Uint8Array(buf), dec = new TextDecoder(), out = {};
+  let eocd = -1;
+  for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50){ eocd = i; break; }
+  if (eocd < 0) throw new Error('nu e zip');
+  let p = dv.getUint32(eocd + 16, true);
+  for (let k = dv.getUint16(eocd + 10, true); k > 0; k--){
+    if (dv.getUint32(p, true) !== 0x02014b50) throw new Error('zip stricat');
+    const method = dv.getUint16(p + 10, true), size = dv.getUint32(p + 20, true), nlen = dv.getUint16(p + 28, true), off = dv.getUint32(p + 42, true);
+    const name = dec.decode(u8.subarray(p + 46, p + 46 + nlen));
+    p += 46 + nlen + dv.getUint16(p + 30, true) + dv.getUint16(p + 32, true);
+    if (!/\.(xml|rels)$/.test(name) || (method !== 0 && method !== 8)) continue;
+    const start = off + 30 + dv.getUint16(off + 26, true) + dv.getUint16(off + 28, true);
+    let data = u8.subarray(start, start + size);
+    if (method === 8) data = new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+    out[name] = dec.decode(data);
+  }
+  return out;
+}
+const xmlUnesc = t => t.replace(/&(#x?[0-9a-fA-F]+|lt|gt|quot|apos|amp);/g, (_, e) =>
+  e[0] === '#' ? String.fromCodePoint(e[1] === 'x' ? parseInt(e.slice(2), 16) : +e.slice(1)) : ({lt:'<', gt:'>', quot:'"', apos:"'", amp:'&'})[e]);
+const xlTexts = x => [...x.matchAll(/<t(?:\s[^>]*)?>(.*?)<\/t>/gs)].map(m => xmlUnesc(m[1])).join('');
+const xlAttr = (tag, name) => (tag.match(new RegExp('\\s' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '="([^"]*)"')) || [])[1];
+function xlCells(xml, shared){
+  return [...xml.matchAll(/<row\b([^>]*?)(?:\/>|>(.*?)<\/row>)/gs)].map(r => {
+    const m = {}; let pos = 0;
+    for (const c of (r[2] || '').matchAll(/<c\b([^>]*?)(?:\/>|>(.*?)<\/c>)/gs)){
+      const attrs = c[1], body = c[2] || '', ref = attrs.match(/\br="([A-Z]+)\d*"/);
+      const col = ref ? [...ref[1]].reduce((a, ch) => a * 26 + ch.charCodeAt(0) - 64, 0) - 1 : pos;
+      pos = col + 1;
+      const t = (attrs.match(/\bt="(\w+)"/) || [])[1], vm = body.match(/<v>(.*?)<\/v>/s), v = vm ? xmlUnesc(vm[1]) : null;
+      m[col] = (t === 's' ? (v != null ? shared[+v] : null) : t === 'inlineStr' ? xlTexts(body) : v) ?? '';
+    }
+    return m;
+  });
+}
+const num = v => { const t = String(v ?? '').trim(); return t !== '' && isFinite(+t) ? +t : null; };
+function parseExcelDate(v){
+  const s = String(v ?? '').trim(), n = num(s);
+  if (n != null){ if (n <= 1000 || n >= 200000) return null; const d = new Date(Date.UTC(1899, 11, 30) + Math.floor(n) * 864e5); return d.toISOString().slice(0, 10); }
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/), y, mo, d;
+  if (m) [y, mo, d] = [+m[1], +m[2], +m[3]];
+  else if ((m = s.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})/))) [y, mo, d] = [+m[3], +m[2], +m[1]];
+  else return null;
+  const x = new Date(Date.UTC(y, mo - 1, d));
+  return x.getUTCFullYear() === y && x.getUTCMonth() === mo - 1 && x.getUTCDate() === d ? x.toISOString().slice(0, 10) : null;
+}
+function parseExcelMinutes(minutes, duration){
+  const n = num(minutes); if (n != null) return Math.round(n);
+  const d = String(duration ?? '').trim(); if (!d) return null;
+  const f = num(d); if (f != null) return f < 10 ? Math.round(f * 1440) : null;
+  const m = d.match(/^(\d+):(\d{1,2})/); return m ? +m[1] * 60 + +m[2] : null;
+}
+const DIR_IN = {N:0, NE:1, E:2, SE:3, S:4, SV:5, SW:5, V:6, W:6, NV:7, NW:7};
+const dirSet = v => new Set(String(v ?? '').toUpperCase().split(/[,;\s]+/).map(x => DIR_IN[x]).filter(x => x != null));
+function readXlsx(files){
+  const wb = files['xl/workbook.xml']; if (!wb) return null;
+  const rels = {}; for (const m of (files['xl/_rels/workbook.xml.rels'] || '').matchAll(/<Relationship\b[^>]*>/g)) rels[xlAttr(m[0], 'Id')] = xlAttr(m[0], 'Target');
+  const sheet = name => {
+    const tag = [...wb.matchAll(/<sheet\b[^>]*>/g)].map(m => m[0]).find(t => xmlUnesc(xlAttr(t, 'name') || '') === name); if (!tag) return null;
+    const target = rels[xlAttr(tag, 'r:id')]; if (!target) return null;
+    return files[target.startsWith('/') ? target.slice(1) : 'xl/' + target] || null;
+  };
+  const shared = [...(files['xl/sharedStrings.xml'] || '').matchAll(/<si\b[^>]*>(.*?)<\/si>/gs)].map(m => xlTexts(m[1]));
+  const days = sheet('Zile de zbor'); if (!days) return null;
+  const fl = [];
+  for (const r of xlCells(days, shared)){
+    const date = parseExcelDate(r[0]), site = String(r[1] ?? '').trim(), min = parseExcelMinutes(r[3], r[2]);
+    if (date && site && min > 0) fl.push({date, site, minutes: min});
+  }
+  const st = [], s3 = sheet('Situri');
+  if (s3) for (const r of xlCells(s3, shared)){
+    const name = String(r[0] ?? '').trim(), lat = num(r[1]), lon = num(r[2]);
+    if (!name || lat == null || lon == null) continue;
+    const good = dirSet(r[4]), marg = dirSet(r[5]), h = String(r[6] ?? '').trim(), hn = num(h), alt = num(r[3]);
+    const hf = hn != null ? Math.round(hn) : h.toLowerCase() === 'fără' ? 0 : -1;
+    st.push({n: name, lat, lon, alt: alt != null ? Math.round(alt) : null, o: [0,1,2,3,4,5,6,7].map(i => good.has(i) ? 2 : marg.has(i) ? 1 : 0), ...(hf >= 0 ? {hf} : {})});
+  }
+  return {flights: fl, sites: st};
+}
+/* Adaugă doar ce lipsește: aceeași dată + locație + durată = zi existentă; aceleași coordonate = sit existent. */
+function mergeImport(data){
+  const k = f => `${f.date}|${f.site}|${f.minutes}`, have = new Map();
+  for (const f of flights) have.set(k(f), (have.get(k(f)) || 0) + 1);
+  let nf = 0;
+  for (const f of data.flights){
+    const c = have.get(k(f)) || 0;
+    if (c > 0) have.set(k(f), c - 1);
+    else { flights.push({id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8), ...f}); nf++; }
+  }
+  const keys = new Set(sites.map(key)); let ns = 0;
+  for (const s of data.sites) if (!keys.has(key(s))){ keys.add(key(s)); sites.push(s); ns++; }
+  return [nf, ns];
+}
+function importMessage(nf, ns){
+  if (!nf && !ns) return 'Nimic nou: totul exista deja.';
+  return 'Am adăugat ' + [nf ? (nf === 1 ? '1 zi de zbor' : `${nf} zile de zbor`) : '', ns ? (ns === 1 ? '1 sit' : `${ns} situri`) : ''].filter(Boolean).join(' și ') + '.';
+}
+async function importXlsx(file){
+  let data = null;
+  try { data = readXlsx(await unzip(await file.arrayBuffer())); } catch {}
+  if (!data) return toast('Nu am putut citi fișierul. Alege un fișier exportat din jurnal.');
+  if (!data.flights.length && !data.sites.length) return toast('Fișierul nu conține zile de zbor.');
+  const [nf, ns] = mergeImport(data);
+  saveFlights(); if (ns) saveSites();
+  renderLog(); render(); if (ns) load();
+  toast(importMessage(nf, ns));
+}
 function exportXlsx(){
-  const blob = zipBlob(xlsxParts(flights), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  const blob = zipBlob(xlsxParts(flights, sites), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = `jurnal-zbor-${localDate(new Date())}.xlsx`;
   document.body.append(a); a.click(); a.remove();
@@ -839,6 +956,7 @@ document.addEventListener('click', e => {
   if (t.matches('[data-close]')) return t.closest('dialog').close();
   if (t.id === 'log') return openLog();
   if (t.id === 'exportXlsx') return exportXlsx();
+  if (t.id === 'importXlsx'){ $('#importFile').value = ''; return $('#importFile').click(); }
   if (t.id === 'addFlight') return openFlight({site: logSite || undefined});
   if (t.dataset.view){ logView = t.dataset.view; logSite = null; renderLog(); return; }
   if (t.dataset.siteFilter != null){ logSite = t.dataset.siteFilter; logView = 'days'; renderLog(); return; }
@@ -868,6 +986,7 @@ document.addEventListener('click', e => {
   }
 });
 $('#q').addEventListener('input', renderResults);
+$('#importFile').addEventListener('change', e => { const f = e.target.files[0]; if (f) importXlsx(f); });
 $('#manual').addEventListener('submit', e => {
   e.preventDefault();
   const err = $('#mErr'), name = $('#mName').value.trim(), c = parseCoords($('#mCoord').value), alt = parseInt($('#mAlt').value, 10);

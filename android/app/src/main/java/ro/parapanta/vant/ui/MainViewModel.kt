@@ -14,6 +14,10 @@ import ro.parapanta.vant.model.ForecastCache
 import ro.parapanta.vant.model.HolfuyLink
 import ro.parapanta.vant.model.HolfuyStation
 import ro.parapanta.vant.model.holfuyFor
+import ro.parapanta.vant.model.importMessage
+import ro.parapanta.vant.model.mergeFlights
+import ro.parapanta.vant.model.mergeSites
+import ro.parapanta.vant.model.readXlsx
 import ro.parapanta.vant.model.Hour
 import ro.parapanta.vant.model.Site
 import ro.parapanta.vant.model.Status
@@ -100,6 +104,19 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val list = _state.value.flights.filter { it.id != withId.id } + withId
         repo.saveFlights(list)
         _state.update { it.copy(flights = list) }
+    }
+
+    /** Importă un export Excel: adaugă doar zilele de zbor și siturile care lipsesc. Întoarce mesajul pentru utilizator. */
+    fun importXlsx(bytes: ByteArray): String {
+        val data = readXlsx(bytes) ?: return "Nu am putut citi fișierul. Alege un fișier exportat din jurnal."
+        if (data.flights.isEmpty() && data.sites.isEmpty()) return "Fișierul nu conține zile de zbor."
+        val (fl, nf) = mergeFlights(_state.value.flights, data.flights) { java.util.UUID.randomUUID().toString() }
+        val (st, ns) = mergeSites(_state.value.sites, data.sites)
+        repo.saveFlights(fl)
+        if (ns > 0) repo.saveSites(st)
+        _state.update { it.copy(flights = fl, sites = st) }
+        if (ns > 0) refresh()
+        return importMessage(nf, ns)
     }
 
     fun deleteFlight(id: String) {

@@ -114,7 +114,7 @@ private fun today() = LocalDate.now(ZoneId.of("Europe/Bucharest")).toString()
  * Jurnalul personal: o intrare = o zi de zbor pe o locație, cu timpul total în aer.
  * [draft] deschide direct formularul (de ex. din „Am zburat aici”); id gol = zi nouă.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun LogScreen(vm: MainViewModel, state: UiState, draft: Flight?, onDraftShown: () -> Unit, onClose: () -> Unit) {
     val p = LocalPalette.current
@@ -129,8 +129,13 @@ fun LogScreen(vm: MainViewModel, state: UiState, draft: Flight?, onDraftShown: (
     // Exportul Excel: utilizatorul alege unde salvează fișierul (de ex. Descărcări sau Drive).
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(XLSX_MIME)) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
-        val ok = runCatching { ctx.contentResolver.openOutputStream(uri)!!.use { it.write(flightsXlsx(state.flights)) } }.isSuccess
+        val ok = runCatching { ctx.contentResolver.openOutputStream(uri)!!.use { it.write(flightsXlsx(state.flights, state.sites)) } }.isSuccess
         toast(if (ok) "Fișierul Excel a fost salvat" else "Nu am putut salva fișierul")
+    }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        val bytes = runCatching { ctx.contentResolver.openInputStream(uri)!!.use { it.readBytes() } }.getOrNull()
+        toast(if (bytes == null) "Nu am putut deschide fișierul" else vm.importXlsx(bytes))
     }
 
     val flights = state.flights
@@ -158,10 +163,13 @@ fun LogScreen(vm: MainViewModel, state: UiState, draft: Flight?, onDraftShown: (
                 }
                 Text("În $year: ${fmtDur(inYear.sumOf { it.minutes })} în ${zile(inYear.size)}.", color = p.muted, fontSize = 13.sp,
                     modifier = Modifier.padding(top = 8.dp))
-                Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = { form = Flight("", today(), filter ?: state.sites.firstOrNull()?.n ?: "", 0) }) { Text("+ Adaugă zi de zbor") }
                     if (flights.isNotEmpty()) OutlinedButton(onClick = { exportLauncher.launch("jurnal-zbor-${today()}.xlsx") }) { Text("Export Excel") }
+                    OutlinedButton(onClick = { importLauncher.launch(arrayOf(XLSX_MIME, "application/octet-stream")) }) { Text("Import Excel") }
                 }
+                Text("Exportul e și backup: păstrează fișierul și încarcă-l cu „Import Excel” după ce schimbi telefonul sau reinstalezi aplicația. Se adaugă doar ce lipsește.",
+                    color = p.muted, fontSize = 12.5.sp, modifier = Modifier.padding(top = 2.dp))
                 Row(
                     Modifier.padding(top = 16.dp).fillMaxWidth().clip(RoundedCornerShape(11.dp)).border(1.dp, p.line, RoundedCornerShape(11.dp))
                 ) {
