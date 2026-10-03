@@ -157,21 +157,21 @@ fun readXlsx(bytes: ByteArray): XlsxImport? {
     val shared = files["xl/sharedStrings.xml"]?.let { x ->
         Regex("<si\\b[^>]*>(.*?)</si>", DOT).findAll(x).map { texts(it.groupValues[1]) }.toList()
     } ?: emptyList()
-    val days = sheet("Zile de zbor") ?: return null
+    val days = sheet("Zile de zbor") ?: sheet("Flying days") ?: return null
     val flights = cells(days, shared).mapNotNull { r ->
         val date = parseExcelDate(r[0] ?: "") ?: return@mapNotNull null
         val site = (r[1] ?: "").trim().ifEmpty { return@mapNotNull null }
         val min = parseExcelMinutes(r[3], r[2]) ?: return@mapNotNull null
         if (min > 0) Flight("", date, site, min) else null
     }
-    val sites = sheet("Situri")?.let { x ->
+    val sites = (sheet("Situri") ?: sheet("Sites"))?.let { x ->
         cells(x, shared).mapNotNull { r ->
             val name = (r[0] ?: "").trim().ifEmpty { return@mapNotNull null }
             val lat = r[1]?.trim()?.toDoubleOrNull() ?: return@mapNotNull null
             val lon = r[2]?.trim()?.toDoubleOrNull() ?: return@mapNotNull null
             val good = dirSet(r[4])
             val marg = dirSet(r[5])
-            val hf = (r[6] ?: "").trim().let { h -> h.toDoubleOrNull()?.roundToInt() ?: if (h.equals("fără", true)) 0 else -1 }
+            val hf = (r[6] ?: "").trim().let { h -> h.toDoubleOrNull()?.roundToInt() ?: if (h.equals("fără", true) || h.equals("none", true)) 0 else -1 }
             Site(name, lat, lon, r[3]?.trim()?.toDoubleOrNull()?.roundToInt(), List(8) { if (it in good) 2 else if (it in marg) 1 else 0 }, hf)
         }
     } ?: emptyList()

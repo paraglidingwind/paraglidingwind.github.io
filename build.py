@@ -7,6 +7,7 @@ init = (root / "data/initial_sites.json").read_text()
 icons = json.loads((root / "data/sky_icons.json").read_text())
 html = (root / "src/index.html").read_text().replace("__RO_SITES__", ro).replace("__DEFAULT_SITES__", init) \
     .replace("__SKY_ICONS__", json.dumps(icons, separators=(",", ":"))) \
+    .replace("__I18N_EN__", json.dumps(json.loads((root / "data/i18n_en.json").read_text()), ensure_ascii=False, separators=(",", ":"))) \
     .replace("__HOLFUY__", (root / "data/holfuy_ro.json").read_text()) \
     .replace("__GOOGLE_CLIENT_ID__", json.dumps(json.loads((root / "data/google.json").read_text())["clientId"]))
 (root / "docs/index.html").write_text(html)
