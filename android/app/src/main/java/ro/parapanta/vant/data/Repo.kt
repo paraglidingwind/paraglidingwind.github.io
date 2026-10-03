@@ -10,6 +10,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import ro.parapanta.vant.model.Flight
 import ro.parapanta.vant.model.ForecastCache
 import ro.parapanta.vant.model.HolfuyStation
 import ro.parapanta.vant.model.Site
@@ -64,6 +65,11 @@ class Repo(private val ctx: Context) {
         prefs.getString("sites", null)?.let { runCatching { json.decodeFromString<List<Site>>(it) }.getOrNull() } ?: defaultSites
 
     fun saveSites(sites: List<Site>) = prefs.edit().putString("sites", json.encodeToString(sites)).apply()
+
+    fun loadFlights(): List<Flight> =
+        prefs.getString("flights", null)?.let { runCatching { json.decodeFromString<List<Flight>>(it) }.getOrNull() } ?: emptyList()
+
+    fun saveFlights(list: List<Flight>) = prefs.edit().putString("flights", json.encodeToString(list)).apply()
 
     fun loadThresholds(): Thresholds =
         prefs.getString("thresholds", null)?.let { runCatching { json.decodeFromString<Thresholds>(it) }.getOrNull() } ?: Thresholds()

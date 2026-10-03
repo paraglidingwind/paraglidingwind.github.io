@@ -45,7 +45,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
+import ro.parapanta.vant.model.Flight
 import ro.parapanta.vant.ui.Board
+import ro.parapanta.vant.ui.BookIcon
+import ro.parapanta.vant.ui.LogScreen
+import ro.parapanta.vant.ui.ZONE
+import java.time.LocalDate
 import ro.parapanta.vant.ui.CellSheet
 import ro.parapanta.vant.ui.Condensed
 import ro.parapanta.vant.ui.Display
@@ -84,6 +89,8 @@ fun App(vm: MainViewModel = viewModel()) {
     val state by vm.state.collectAsStateWithLifecycle()
     val p = LocalPalette.current
     var editing by rememberSaveable { mutableStateOf(false) }
+    var logOpen by rememberSaveable { mutableStateOf(false) }
+    var flightDraft by remember { mutableStateOf<Flight?>(null) }
     var cell by remember { mutableStateOf<Pair<Int, String>?>(null) }
     var siteSheet by remember { mutableStateOf<Int?>(null) }
     var now by remember { mutableStateOf(System.currentTimeMillis()) }
@@ -102,6 +109,11 @@ fun App(vm: MainViewModel = viewModel()) {
         EditScreen(vm, state) { editing = false }
         return
     }
+    if (logOpen) {
+        BackHandler { logOpen = false }
+        LogScreen(vm, state, flightDraft, onDraftShown = { flightDraft = null }) { logOpen = false }
+        return
+    }
 
     Column(Modifier.fillMaxSize().background(p.bg).safeDrawingPadding()) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 10.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -117,6 +129,7 @@ fun App(vm: MainViewModel = viewModel()) {
                 )
             }
             IconButton(onClick = { vm.refresh(force = true) }) { Icon(Icons.Filled.Refresh, "Reîmprospătează prognoza", tint = p.ink) }
+            IconButton(onClick = { logOpen = true }) { BookIcon(p.ink, Modifier.size(22.dp)) }
             IconButton(onClick = { editing = true }) { Icon(Icons.Filled.Edit, "Editează lista de situri", tint = p.ink) }
         }
         state.error?.let { e ->
@@ -144,5 +157,12 @@ fun App(vm: MainViewModel = viewModel()) {
     }
 
     cell?.let { (si, h) -> CellSheet(state, si, h) { cell = null } }
-    siteSheet?.let { SiteSheet(state, it, onDay = { d -> vm.selectDay(d); siteSheet = null }) { siteSheet = null } }
+    siteSheet?.let {
+        SiteSheet(state, it, onDay = { d -> vm.selectDay(d); siteSheet = null },
+            onFlew = { name ->
+                siteSheet = null
+                flightDraft = Flight("", LocalDate.now(ZONE).toString(), name, 0)
+                logOpen = true
+            }) { siteSheet = null }
+    }
 }

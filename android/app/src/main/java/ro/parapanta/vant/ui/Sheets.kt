@@ -113,7 +113,7 @@ fun CellSheet(state: UiState, si: Int, h: String, onDismiss: () -> Unit) {
 }
 
 @Composable
-fun SiteSheet(state: UiState, si: Int, onDay: (Int) -> Unit, onDismiss: () -> Unit) {
+fun SiteSheet(state: UiState, si: Int, onDay: (Int) -> Unit, onFlew: (String) -> Unit, onDismiss: () -> Unit) {
     val p = LocalPalette.current
     val site = state.sites.getOrNull(si) ?: return onDismiss()
     val hours = state.hours
@@ -127,6 +127,7 @@ fun SiteSheet(state: UiState, si: Int, onDay: (Int) -> Unit, onDismiss: () -> Un
                 dirs(1).takeIf { it.isNotEmpty() }?.let { Text("Marginal: $it", color = p.muted) }
             }
         }
+        OutlinedButton(onClick = { onFlew(site.n) }, Modifier.padding(top = 14.dp)) { Text("✓ Am zburat aici") }
         state.station(site)?.let { HolfuyBlock(it) }
         Text("URMĂTOARELE ZILE", color = p.muted, fontWeight = FontWeight.Bold, fontFamily = Display, letterSpacing = .8.sp,
             modifier = Modifier.padding(top = 18.dp, bottom = 4.dp))

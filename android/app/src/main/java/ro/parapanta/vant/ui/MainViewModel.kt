@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import ro.parapanta.vant.data.Repo
+import ro.parapanta.vant.model.Flight
 import ro.parapanta.vant.model.ForecastCache
 import ro.parapanta.vant.model.HolfuyLink
 import ro.parapanta.vant.model.HolfuyStation
@@ -34,6 +35,7 @@ data class UiState(
     val error: String? = null,
     val dayIdx: Int = 0,
     val holfuy: List<HolfuyStation> = emptyList(),
+    val flights: List<Flight> = emptyList(),
 ) {
     fun station(site: Site): HolfuyLink? = holfuyFor(site, holfuy)
     /** Zilele din prognoză, începând cu azi. */
@@ -50,7 +52,7 @@ data class UiState(
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
     val repo = Repo(app)
-    private val _state = MutableStateFlow(UiState(repo.loadSites(), repo.loadThresholds(), repo.loadCache(), holfuy = repo.holfuy))
+    private val _state = MutableStateFlow(UiState(repo.loadSites(), repo.loadThresholds(), repo.loadCache(), holfuy = repo.holfuy, flights = repo.loadFlights()))
     val state: StateFlow<UiState> = _state.asStateFlow()
 
     init { refresh() }
@@ -91,6 +93,20 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         setSites(l)
     }
     fun resetSites() = setSites(repo.defaultSites, fetch = true)
+
+    /** Adaugă o zi de zbor nouă (id gol) sau o înlocuiește pe cea cu același id. */
+    fun saveFlight(f: Flight) {
+        val withId = if (f.id.isEmpty()) f.copy(id = System.currentTimeMillis().toString(36) + (1000..9999).random()) else f
+        val list = _state.value.flights.filter { it.id != withId.id } + withId
+        repo.saveFlights(list)
+        _state.update { it.copy(flights = list) }
+    }
+
+    fun deleteFlight(id: String) {
+        val list = _state.value.flights.filter { it.id != id }
+        repo.saveFlights(list)
+        _state.update { it.copy(flights = list) }
+    }
 
     fun setThresholds(t: Thresholds) {
         val fixed = if (t.from > t.to) t.copy(from = t.to, to = t.from) else t
