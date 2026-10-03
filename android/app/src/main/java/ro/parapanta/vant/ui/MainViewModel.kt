@@ -12,6 +12,9 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import ro.parapanta.vant.data.Repo
 import ro.parapanta.vant.model.ForecastCache
+import ro.parapanta.vant.model.HolfuyLink
+import ro.parapanta.vant.model.HolfuyStation
+import ro.parapanta.vant.model.holfuyFor
 import ro.parapanta.vant.model.Hour
 import ro.parapanta.vant.model.Site
 import ro.parapanta.vant.model.Status
@@ -32,7 +35,9 @@ data class UiState(
     val loading: Boolean = false,
     val error: String? = null,
     val dayIdx: Int = 0,
+    val holfuy: List<HolfuyStation> = emptyList(),
 ) {
+    fun station(site: Site): HolfuyLink? = holfuyFor(site, holfuy)
     /** Zilele din prognoză, începând cu azi. */
     val dates: List<String> by lazy {
         val f = fc?.bySite?.values?.firstOrNull() ?: return@lazy emptyList()
@@ -47,7 +52,7 @@ data class UiState(
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
     val repo = Repo(app)
-    private val _state = MutableStateFlow(UiState(repo.loadSites(), repo.loadThresholds(), repo.loadCache()))
+    private val _state = MutableStateFlow(UiState(repo.loadSites(), repo.loadThresholds(), repo.loadCache(), holfuy = repo.holfuy))
     val state: StateFlow<UiState> = _state.asStateFlow()
 
     init { refresh() }

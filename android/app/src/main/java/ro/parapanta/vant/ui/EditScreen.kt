@@ -59,6 +59,8 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import ro.parapanta.vant.model.DIRS
+import ro.parapanta.vant.model.HolfuyLink
+import ro.parapanta.vant.model.parseHolfuyId
 import ro.parapanta.vant.model.Site
 import ro.parapanta.vant.model.Thresholds
 import ro.parapanta.vant.model.key
@@ -96,7 +98,7 @@ fun EditScreen(vm: MainViewModel, state: UiState, onClose: () -> Unit) {
             item { Section("Lista ta") }
             if (state.sites.isEmpty()) item { Text("Niciun sit în listă.", color = p.muted) }
             itemsIndexed(state.sites, key = { _, s -> "my" + s.key + s.n }) { i, s ->
-                SiteRow(s) {
+                SiteRow(s, state.station(s)) {
                     IconButton(onClick = { vm.move(i, -1) }, enabled = i > 0) { Icon(Icons.Filled.KeyboardArrowUp, "Mută ${s.n} mai sus") }
                     IconButton(onClick = { vm.move(i, 1) }, enabled = i < state.sites.size - 1) { Icon(Icons.Filled.KeyboardArrowDown, "Mută ${s.n} mai jos") }
                     IconButton(onClick = { vm.remove(i); toast("${s.n} a fost șters") }) { Icon(Icons.Filled.Close, "Șterge ${s.n}", tint = p.no) }
@@ -131,13 +133,14 @@ private fun Section(t: String) {
 }
 
 @Composable
-private fun SiteRow(s: Site, actions: @Composable () -> Unit) {
+private fun SiteRow(s: Site, station: HolfuyLink? = null, actions: @Composable () -> Unit) {
     val p = LocalPalette.current
     Row(Modifier.fillMaxWidth().height(56.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Rose(s.o, Modifier.size(24.dp))
         Column(Modifier.weight(1f)) {
             Text(s.n, color = p.ink, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text((s.alt?.let { "$it m · " } ?: "") + String.format(Locale.US, "%.3f, %.3f", s.lat, s.lon), color = p.muted, fontSize = 12.sp)
+            Text((s.alt?.let { "$it m · " } ?: "") + String.format(Locale.US, "%.3f, %.3f", s.lat, s.lon) +
+                (station?.let { " · Holfuy ${it.station.n}" } ?: ""), color = p.muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         actions()
     }
@@ -149,6 +152,7 @@ private fun ManualForm(onAdd: (Site) -> Unit) {
     var name by remember { mutableStateOf("") }
     var coord by remember { mutableStateOf("") }
     var alt by remember { mutableStateOf("") }
+    var hf by remember { mutableStateOf("") }
     val rose = remember { mutableStateListOf(0, 0, 0, 0, 0, 0, 0, 0) }
     var err by remember { mutableStateOf<String?>(null) }
     Column {
@@ -159,6 +163,9 @@ private fun ManualForm(onAdd: (Site) -> Unit) {
         Text("În Google Maps ține apăsat pe decolare, apoi copiază coordonatele afișate sus.", color = p.muted, fontSize = 12.5.sp, modifier = Modifier.padding(top = 4.dp))
         OutlinedTextField(alt, { alt = it.filter(Char::isDigit) }, Modifier.fillMaxWidth().padding(top = 8.dp), singleLine = true,
             label = { Text("Altitudine decolare (m)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+        OutlinedTextField(hf, { hf = it }, Modifier.fillMaxWidth().padding(top = 8.dp), singleLine = true,
+            label = { Text("Stație Holfuy (opțional)") }, placeholder = { Text("774 sau holfuy.com/en/weather/774") })
+        Text("Dacă lași gol, se alege automat stația cea mai apropiată, la cel mult 5 km.", color = p.muted, fontSize = 12.5.sp, modifier = Modifier.padding(top = 4.dp))
         Text("Direcții bune de vânt (apasă: gri = nu, galben = marginal, verde = bun)", color = p.muted, fontSize = 13.sp, modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
         val order = listOf(7, 0, 1, 6, -1, 2, 5, 4, 3)
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -194,8 +201,8 @@ private fun ManualForm(onAdd: (Site) -> Unit) {
                 else -> null
             }
             if (err == null && c != null) {
-                onAdd(Site(name.trim(), Math.round(c.first * 1e5) / 1e5, Math.round(c.second * 1e5) / 1e5, alt.toIntOrNull(), rose.toList()))
-                name = ""; coord = ""; alt = ""; for (i in 0 until 8) rose[i] = 0
+                onAdd(Site(name.trim(), Math.round(c.first * 1e5) / 1e5, Math.round(c.second * 1e5) / 1e5, alt.toIntOrNull(), rose.toList(), parseHolfuyId(hf) ?: -1))
+                name = ""; coord = ""; alt = ""; hf = ""; for (i in 0 until 8) rose[i] = 0
             }
         }, Modifier.padding(top = 12.dp)) { Text("Adaugă situl") }
     }

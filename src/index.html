@@ -85,6 +85,11 @@ table.grid{border-collapse:separate;border-spacing:0;font-variant-numeric:tabula
 .site .rose{flex:0 0 26px;width:26px;height:26px}
 .site b{display:block;font:600 14.5px/1.1 var(--f-ui);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .site span{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+.live{display:inline-block;margin-left:4px;padding:0 4px;border-radius:4px;background:var(--accent);color:var(--accent-ink);font-size:9.5px;font-weight:700;letter-spacing:.05em;font-style:normal;vertical-align:1px}
+.holfuy{margin-top:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+.holfuy iframe{display:block;width:100%;height:258px;border:0}
+.hf-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:16px 0 6px}
+.hf-head a{color:var(--accent);font-size:13px;font-weight:600;white-space:nowrap}
 .grid td{text-align:center}
 .cell{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;width:var(--cell-w);height:62px;border:0;border-left:1px solid var(--surface);padding:0}
 .cell .ic{display:flex;align-items:center;gap:3px}
@@ -221,6 +226,9 @@ textarea.in{min-height:90px;font-size:12px;font-family:ui-monospace,monospace}
       <p class="hint">În Google Maps ține apăsat pe decolare, apoi copiază coordonatele afișate sus.</p>
       <label class="f" for="mAlt">Altitudine decolare (m)</label>
       <input class="in" id="mAlt" type="number" inputmode="numeric" placeholder="800">
+      <label class="f" for="mHf">Stație Holfuy (opțional)</label>
+      <input class="in" id="mHf" placeholder="ex: 774 sau holfuy.com/en/weather/774" inputmode="text" autocomplete="off">
+      <p class="hint">Dacă lași gol, se alege automat stația cea mai apropiată, la cel mult 5 km.</p>
       <label class="f">Direcții bune de vânt (apasă: gri = nu, galben = marginal, verde = bun)</label>
       <div class="compass" id="mRose"></div>
       <p class="err" id="mErr" hidden></p>
@@ -258,6 +266,8 @@ textarea.in{min-height:90px;font-size:12px;font-family:ui-monospace,monospace}
 const RO_SITES = __RO_SITES__;
 const DEFAULT_SITES = __DEFAULT_SITES__;
 const SKY_ICONS = __SKY_ICONS__;
+const HOLFUY = __HOLFUY__;
+const HOLFUY_MAX_KM = 5;
 const DIRS = ['N','NE','E','SE','S','SV','V','NV'];
 const DEFAULT_SETTINGS = {good:5, marg:7, calm:1, gust:9, spread:4, rain:0.2, from:8, to:20};
 const HOURLY = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,cloud_cover,cape,temperature_2m,wind_speed_850hPa,wind_direction_850hPa,weather_code,cloud_cover_low,cloud_cover_mid,cloud_cover_high,is_day';
@@ -279,6 +289,19 @@ let dayIdx = 0;
 let loading = false, lastError = null;
 
 const key = s => s.lat.toFixed(4)+','+s.lon.toFixed(4);
+function distKm(a, b, c, d){
+  const r = x => x * Math.PI / 180, h = Math.sin(r(c-a)/2)**2 + Math.cos(r(a))*Math.cos(r(c))*Math.sin(r(d-b)/2)**2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
+}
+/* Stația Holfuy a unui sit: hf > 0 aleasă explicit, 0 = fără, lipsă/-1 = cea mai apropiată stație la cel mult 5 km. Identic cu holfuyFor() din Kotlin. */
+function stationOf(s){
+  const hf = s.hf ?? -1;
+  if (hf === 0) return null;
+  if (hf > 0){ const x = HOLFUY.find(x => x.id === hf); return x ? {...x, km: distKm(s.lat, s.lon, x.lat, x.lon)} : {id: hf, n: 'Stația ' + hf, alt: null, km: null}; }
+  let best = null;
+  for (const x of HOLFUY){ const km = distKm(s.lat, s.lon, x.lat, x.lon); if (km <= HOLFUY_MAX_KM && (!best || km < best.km)) best = {...x, km}; }
+  return best;
+}
 const saveSites = () => { store.set('vld.sites', sites); };
 
 /* ---------- reguli ---------- */
@@ -457,7 +480,7 @@ function render(){
   let html = `<table class="grid"><thead><tr><th class="corner">${dayName(d,dayIdx)}</th>`;
   html += hs.map(h => `<th class="${h===nowH?'now':''}" ${h===nowH?'id="nowcol"':''}>${h}</th>`).join('') + '</tr></thead><tbody>';
   sites.forEach((s, si) => {
-    html += `<tr><th><button class="site" data-site="${si}">${roseSvg(s.o)}<span><b>${esc(s.n)}</b><span>${s.alt ? s.alt + ' m' : ''}</span></span></button></th>`;
+    html += `<tr><th><button class="site" data-site="${si}">${roseSvg(s.o)}<span><b>${esc(s.n)}</b><span>${s.alt ? s.alt + ' m' : ''}${stationOf(s) ? '<em class="live">LIVE</em>' : ''}</span></span></button></th>`;
     for (const h of hs){
       const w = hourData(s, `${d}T${h}:00`), r = rate(s, w);
       if (r.st === 'na'){ html += `<td><div class="cell na">–</div></td>`; continue; }
@@ -529,6 +552,8 @@ function daySummary(site, d){
 function openSite(si){
   const s = sites[si], ds = dates(), hs = hours();
   $('#cellTitle').textContent = s.n;
+  // Dialogul se deschide înainte de conținut: widget-ul Holfuy își calculează dimensiunea la încărcare.
+  $('#dlgCell').showModal();
   const scale = `<div class="wk-scale"><span></span><span class="strip" style="--n:${hs.length}">${hs.map((h, i) => `<em>${i % 3 === 0 ? h : ''}</em>`).join('')}</span></div>`;
   const rows = ds.map((d, i) => {
     const sm = daySummary(s, d);
@@ -537,10 +562,18 @@ function openSite(si){
   }).join('');
   $('#cellBody').innerHTML = `<div style="display:flex;gap:12px;align-items:center">${roseSvg(s.o,'rose big').replace('class="rose big"','class="rose" width="72" height="72"')}
     <div><b>${s.alt ? s.alt + ' m' : 'Altitudine necunoscută'}</b><br><span style="color:var(--muted)">Direcții bune: ${s.o.map((v, i) => v === 2 ? DIRS[i] : '').filter(Boolean).join(', ') || '–'}${s.o.some(v => v === 1) ? '<br>Marginal: ' + s.o.map((v, i) => v === 1 ? DIRS[i] : '').filter(Boolean).join(', ') : ''}</span></div></div>
+    ${holfuyBlock(s)}
     <h3>Următoarele zile</h3>
     <p class="hint" style="margin:0 0 8px">Fiecare pătrățel e o oră, de la ${hs[0]} la ${hs[hs.length-1]}. Atinge o zi ca s-o vezi în tabel.</p>
     <div class="week">${scale}${rows}</div>${siteLinks(s)}`;
-  $('#dlgCell').showModal();
+  $('#cellBody').scrollTop = 0;
+}
+function holfuyBlock(s){
+  const st = stationOf(s); if (!st) return '';
+  const where = st.km == null ? '' : st.km < 0.5 ? 'la decolare' : `la ${st.km.toFixed(1).replace('.', ',')} km`;
+  return `<div class="hf-head"><h3 style="margin:0">Acum · stația Holfuy ${esc(st.n)}</h3><a href="https://holfuy.com/en/weather/${st.id}" target="_blank" rel="noopener">Istoric ↗</a></div>
+    <p class="hint" style="margin:0">${[where, st.alt ? st.alt + ' m' : ''].filter(Boolean).join(' · ')}. Vânt măsurat în timp real; zonele colorate de pe cadran sunt setate de administratorul stației.</p>
+    <div class="holfuy"><iframe title="Vântul acum la ${esc(st.n)}" src="https://widget.holfuy.com/?station=${st.id}&su=m/s&t=C&lang=en&mode=detailed"></iframe></div>`;
 }
 function siteLinks(s){
   return `<div class="links">
@@ -558,7 +591,7 @@ function openEdit(){
   $('#dlgEdit').showModal();
 }
 function renderMyList(){
-  $('#myList').innerHTML = sites.length ? sites.map((s, i) => `<div class="row">${roseSvg(s.o)}<div class="t"><b>${esc(s.n)}</b><span>${s.alt ? s.alt+' m · ' : ''}${s.lat.toFixed(3)}, ${s.lon.toFixed(3)}</span></div>
+  $('#myList').innerHTML = sites.length ? sites.map((s, i) => `<div class="row">${roseSvg(s.o)}<div class="t"><b>${esc(s.n)}</b><span>${s.alt ? s.alt+' m · ' : ''}${s.lat.toFixed(3)}, ${s.lon.toFixed(3)}${stationOf(s) ? ' · Holfuy ' + esc(stationOf(s).n) : ''}</span></div>
     <div class="acts"><button data-mv="${i}" data-d="-1" aria-label="Mută ${esc(s.n)} mai sus" ${i===0?'disabled':''}>↑</button><button data-mv="${i}" data-d="1" aria-label="Mută ${esc(s.n)} mai jos" ${i===sites.length-1?'disabled':''}>↓</button><button class="del" data-del="${i}" aria-label="Șterge ${esc(s.n)}">✕</button></div></div>`).join('')
     : '<div class="row"><div class="t"><span>Niciun sit în listă.</span></div></div>';
 }
@@ -631,7 +664,8 @@ $('#manual').addEventListener('submit', e => {
   else if (!manualRose.some(v => v > 0)) msg = 'Alege cel puțin o direcție bună de vânt.';
   if (msg){ err.textContent = msg; err.hidden = false; return; }
   err.hidden = true;
-  sites.push({n:name, lat:+c.lat.toFixed(5), lon:+c.lon.toFixed(5), alt: isFinite(alt) ? alt : null, o:[...manualRose]});
+  const hfm = $('#mHf').value.match(/(\d+)\s*\/?\s*$/) || $('#mHf').value.match(/weather\/(\d+)/);
+  sites.push({n:name, lat:+c.lat.toFixed(5), lon:+c.lon.toFixed(5), alt: isFinite(alt) ? alt : null, o:[...manualRose], ...(hfm ? {hf: +hfm[1]} : {})});
   saveSites(); manualRose = [0,0,0,0,0,0,0,0]; e.target.reset(); renderManualRose(); renderMyList(); toast(`${name} a fost adăugat`); load();
 });
 for (const [k, id] of Object.entries(SETTING_IDS)){

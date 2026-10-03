@@ -11,6 +11,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import ro.parapanta.vant.model.ForecastCache
+import ro.parapanta.vant.model.HolfuyStation
 import ro.parapanta.vant.model.Site
 import ro.parapanta.vant.model.SiteForecast
 import ro.parapanta.vant.model.Thresholds
@@ -52,6 +53,9 @@ class Repo(private val ctx: Context) {
 
     val roSites: List<Site> by lazy { readAsset("ro_sites.json") }
     val defaultSites: List<Site> by lazy { readAsset("initial_sites.json") }
+    val holfuy: List<HolfuyStation> by lazy {
+        json.decodeFromString(ctx.assets.open("holfuy_ro.json").bufferedReader().use { it.readText() })
+    }
 
     private fun readAsset(name: String): List<Site> =
         json.decodeFromString(ctx.assets.open(name).bufferedReader().use { it.readText() })

@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ro.parapanta.vant.model.CLOUD_NOTES
 import ro.parapanta.vant.model.DIRS
+import ro.parapanta.vant.model.HolfuyLink
 import ro.parapanta.vant.model.Site
 import ro.parapanta.vant.model.f1
 import ro.parapanta.vant.model.rate
@@ -126,6 +127,7 @@ fun SiteSheet(state: UiState, si: Int, onDay: (Int) -> Unit, onDismiss: () -> Un
                 dirs(1).takeIf { it.isNotEmpty() }?.let { Text("Marginal: $it", color = p.muted) }
             }
         }
+        state.station(site)?.let { HolfuyBlock(it) }
         Text("URMĂTOARELE ZILE", color = p.muted, fontWeight = FontWeight.Bold, fontFamily = Display, letterSpacing = .8.sp,
             modifier = Modifier.padding(top = 18.dp, bottom = 4.dp))
         Text("Fiecare pătrățel e o oră, de la ${hours.first()} la ${hours.last()}. Atinge o zi ca s-o vezi în tabel.",
@@ -165,6 +167,24 @@ fun SiteSheet(state: UiState, si: Int, onDay: (Int) -> Unit, onDismiss: () -> Un
         }
         Links(site)
     }
+}
+
+@Composable
+private fun HolfuyBlock(link: HolfuyLink) {
+    val p = LocalPalette.current
+    val uri = LocalUriHandler.current
+    val st = link.station
+    val where = link.km?.let { if (it < 0.5) "la decolare" else "la ${String.format(Locale.US, "%.1f", it).replace('.', ',')} km" }
+    Row(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text("ACUM · STAȚIA HOLFUY ${st.n.uppercase()}", color = p.muted, fontWeight = FontWeight.Bold, fontFamily = Display,
+            letterSpacing = .8.sp, modifier = Modifier.weight(1f))
+        Text("Istoric ↗", color = p.accent, fontWeight = FontWeight.SemiBold, fontSize = 14.sp,
+            modifier = Modifier.clickable { uri.openUri("https://holfuy.com/en/weather/${st.id}") }.padding(4.dp))
+    }
+    Text(listOfNotNull(where, st.alt?.let { "$it m" }).joinToString(" · ") +
+        ". Vânt măsurat în timp real; zonele colorate de pe cadran sunt setate de administratorul stației.",
+        color = p.muted, fontSize = 13.sp)
+    HolfuyWidget(st.id, Modifier.padding(top = 8.dp).fillMaxWidth().height(258.dp).clip(RoundedCornerShape(12.dp)))
 }
 
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)

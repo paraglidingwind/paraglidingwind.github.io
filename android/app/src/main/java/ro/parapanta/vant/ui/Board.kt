@@ -149,7 +149,10 @@ fun Board(state: UiState, onCell: (Int, String) -> Unit, onSite: (Int) -> Unit, 
                     Column {
                         Text(site.n, color = p.ink, fontSize = 14.5.sp, fontWeight = FontWeight.SemiBold, fontFamily = Condensed,
                             maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = 15.sp)
-                        site.alt?.let { Text("$it m", color = p.muted, fontSize = 11.5.sp, fontFamily = Condensed) }
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            site.alt?.let { Text("$it m", color = p.muted, fontSize = 11.5.sp, fontFamily = Condensed) }
+                            if (state.station(site) != null) LiveBadge()
+                        }
                     }
                 }
                 Box(Modifier.width(1.dp).fillMaxHeight().background(p.line))
@@ -164,6 +167,13 @@ fun Board(state: UiState, onCell: (Int, String) -> Unit, onSite: (Int) -> Unit, 
             HorizontalDivider(color = p.line)
         }
     }
+}
+
+@Composable
+fun LiveBadge() {
+    val p = LocalPalette.current
+    Text("LIVE", Modifier.clip(RoundedCornerShape(4.dp)).background(p.accent).padding(horizontal = 4.dp),
+        color = p.accentInk, fontSize = 9.5.sp, fontWeight = FontWeight.Bold, letterSpacing = .5.sp, lineHeight = 13.sp)
 }
 
 @Composable

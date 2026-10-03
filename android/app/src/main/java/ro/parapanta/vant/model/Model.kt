@@ -5,7 +5,7 @@ import java.util.Locale
 
 /** Un sit de decolare. [o] = scorul pe cele 8 direcții (N, NE, E, SE, S, SV, V, NV): 0 nu, 1 marginal, 2 bun. */
 @Serializable
-data class Site(val n: String, val lat: Double, val lon: Double, val alt: Int? = null, val o: List<Int>)
+data class Site(val n: String, val lat: Double, val lon: Double, val alt: Int? = null, val o: List<Int>, val hf: Int = -1)
 
 val Site.key: String get() = String.format(Locale.US, "%.4f,%.4f", lat, lon)
 

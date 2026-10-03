@@ -6,7 +6,8 @@ ro = (root / "data/ro_sites.json").read_text()
 init = (root / "data/initial_sites.json").read_text()
 icons = json.loads((root / "data/sky_icons.json").read_text())
 html = (root / "src/index.html").read_text().replace("__RO_SITES__", ro).replace("__DEFAULT_SITES__", init) \
-    .replace("__SKY_ICONS__", json.dumps(icons, separators=(",", ":")))
+    .replace("__SKY_ICONS__", json.dumps(icons, separators=(",", ":"))) \
+    .replace("__HOLFUY__", (root / "data/holfuy_ro.json").read_text())
 (root / "docs/index.html").write_text(html)
 print("docs/index.html", len(html), "bytes")
 
@@ -18,6 +19,6 @@ for name, parts in icons.items():
     kt.append(f'    "{name}" to listOf({items}),')
 kt.append(")")
 (root / "android/app/src/main/java/ro/parapanta/vant/ui/SkyIcons.kt").write_text("\n".join(kt) + "\n")
-for f in ("ro_sites.json", "initial_sites.json"):
+for f in ("ro_sites.json", "initial_sites.json", "holfuy_ro.json"):
     (root / "android/app/src/main/assets" / f).write_text((root / "data" / f).read_text())
 print("android SkyIcons.kt + assets")
