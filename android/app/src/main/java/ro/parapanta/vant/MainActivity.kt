@@ -144,5 +144,5 @@ fun App(vm: MainViewModel = viewModel()) {
     }
 
     cell?.let { (si, h) -> CellSheet(state, si, h) { cell = null } }
-    siteSheet?.let { SiteSheet(state, it) { siteSheet = null } }
+    siteSheet?.let { SiteSheet(state, it, onDay = { d -> vm.selectDay(d); siteSheet = null }) { siteSheet = null } }
 }

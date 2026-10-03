@@ -1,6 +1,12 @@
 package ro.parapanta.vant.ui
 
 import androidx.compose.foundation.background
+import ro.parapanta.vant.model.summarize
+import ro.parapanta.vant.model.Status
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -106,25 +112,55 @@ fun CellSheet(state: UiState, si: Int, h: String, onDismiss: () -> Unit) {
 }
 
 @Composable
-fun SiteSheet(state: UiState, si: Int, onDismiss: () -> Unit) {
+fun SiteSheet(state: UiState, si: Int, onDay: (Int) -> Unit, onDismiss: () -> Unit) {
     val p = LocalPalette.current
     val site = state.sites.getOrNull(si) ?: return onDismiss()
+    val hours = state.hours
+    fun dirs(v: Int) = site.o.mapIndexedNotNull { i, x -> if (x == v) DIRS[i] else null }.joinToString(", ")
     Sheet(site.n, onDismiss) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             Rose(site.o, Modifier.size(72.dp))
             Column {
                 Text(site.alt?.let { "$it m" } ?: "Altitudine necunoscută", color = p.ink, fontWeight = FontWeight.SemiBold)
-                Text(String.format(Locale.US, "%.4f, %.4f", site.lat, site.lon), color = p.muted)
+                Text("Direcții bune: ${dirs(2).ifEmpty { "–" }}", color = p.muted)
+                dirs(1).takeIf { it.isNotEmpty() }?.let { Text("Marginal: $it", color = p.muted) }
             }
         }
-        Text("SĂPTĂMÂNA", color = p.muted, fontWeight = FontWeight.Bold, fontFamily = Display, letterSpacing = .8.sp,
-            modifier = Modifier.padding(top = 18.dp, bottom = 6.dp))
-        state.dates.forEachIndexed { i, d ->
-            val st = state.bestOfDay(site, d)
-            Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Box(Modifier.size(12.dp).clip(CircleShape).background(p.dot(st)))
-                Text("${dayName(d, i)} ${dayDate(d)}", color = p.ink, fontWeight = FontWeight.SemiBold, modifier = Modifier.width(110.dp))
-                Text("${st.label} (cea mai bună oră)", color = p.muted)
+        Text("URMĂTOARELE ZILE", color = p.muted, fontWeight = FontWeight.Bold, fontFamily = Display, letterSpacing = .8.sp,
+            modifier = Modifier.padding(top = 18.dp, bottom = 4.dp))
+        Text("Fiecare pătrățel e o oră, de la ${hours.first()} la ${hours.last()}. Atinge o zi ca s-o vezi în tabel.",
+            color = p.muted, fontSize = 13.sp, modifier = Modifier.padding(bottom = 8.dp))
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).border(1.dp, p.line, RoundedCornerShape(12.dp))) {
+            Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 10.dp)) {
+                Spacer(Modifier.width(72.dp))
+                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                    hours.forEachIndexed { i, h ->
+                        Text(if (i % 3 == 0) h else "", Modifier.weight(1f), color = p.muted, fontSize = 11.sp,
+                            softWrap = false, overflow = TextOverflow.Visible, maxLines = 1)
+                    }
+                }
+            }
+            state.dates.forEachIndexed { i, d ->
+                val sm = summarize(site, hours, hours.map { state.hour(site, d, it) }, state.th)
+                if (i > 0) HorizontalDivider(color = p.line)
+                Row(
+                    Modifier.fillMaxWidth().background(if (i == state.dayIdx) p.sunk else p.surface)
+                        .clickable { onDay(i) }.padding(horizontal = 12.dp, vertical = 10.dp)
+                ) {
+                    Column(Modifier.width(72.dp)) {
+                        Text(dayName(d, i), color = p.ink, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                        Text(dayDate(d), color = p.muted, fontSize = 12.sp)
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                            sm.statuses.forEach { st ->
+                                Box(Modifier.weight(1f).height(16.dp).clip(RoundedCornerShape(3.dp)).background(p.dot(st)))
+                            }
+                        }
+                        Text(sm.text, color = if (sm.status == Status.NA || sm.status == Status.CALM) p.muted else p.fg(sm.status),
+                            fontWeight = FontWeight.SemiBold, fontSize = 14.sp, lineHeight = 18.sp, modifier = Modifier.padding(top = 6.dp))
+                    }
+                }
             }
         }
         Links(site)
