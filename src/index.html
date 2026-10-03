@@ -162,6 +162,7 @@ dl.facts dt{color:var(--muted)} dl.facts dd{margin:0;font-weight:600}
 .row .acts button{width:40px;height:40px;border-radius:10px;border:0;background:none;font-size:18px;color:var(--muted)}
 .row .acts button:disabled{opacity:.3}
 .row .acts button.del{color:var(--no)}
+.more{width:100%;min-height:48px;border:0;background:none;color:var(--accent);font-weight:700}
 .row .acts button.add{color:var(--accent);font-size:24px}
 
 label.f{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
@@ -213,7 +214,10 @@ textarea.in{min-height:90px;font-size:12px;font-family:ui-monospace,monospace}
     <h3>Lista ta</h3>
     <div class="list" id="myList"></div>
 
-    <h3>Adaugă de pe ParaglidingEarth</h3>
+    <button class="btn small danger" id="resetSites" type="button" style="margin-top:8px">Revino la lista inițială</button>
+
+    <h3>Toate siturile din România</h3>
+    <p class="hint" style="margin:0 0 8px">De pe ParaglidingEarth, ordonate după distanța față de siturile tale. Apasă + ca să adaugi.</p>
     <input class="in" id="q" type="search" placeholder="Caută un sit din România (ex: Bunloc)" autocomplete="off">
     <div class="list" id="results" style="margin-top:8px"></div>
 
@@ -247,16 +251,6 @@ textarea.in{min-height:90px;font-size:12px;font-family:ui-monospace,monospace}
       <div><label class="f" for="sTo">Până la ora</label><input class="in" id="sTo" type="number" min="0" max="23" inputmode="numeric"></div>
     </div>
     <div class="actions"><button class="btn small" id="resetSettings" type="button">Praguri implicite</button></div>
-
-    <h3>Backup</h3>
-    <p class="hint">Lista e salvată pe acest telefon. Copiaz-o ca text ca să o muți pe alt dispozitiv sau să o păstrezi.</p>
-    <textarea class="in" id="backup" spellcheck="false" aria-label="Lista ca text"></textarea>
-    <div class="actions">
-      <button class="btn small" id="copyBackup" type="button">Copiază lista</button>
-      <button class="btn small" id="importBackup" type="button">Încarcă textul de mai sus</button>
-      <button class="btn small danger" id="resetSites" type="button">Revino la lista inițială</button>
-    </div>
-    <p class="err" id="bErr" hidden></p>
   </div>
 </div></dialog>
 
@@ -586,8 +580,7 @@ function siteLinks(s){
 let manualRose = [0,0,0,0,0,0,0,0];
 function openEdit(){
   renderMyList(); renderResults(); renderManualRose(); fillSettings();
-  $('#backup').value = JSON.stringify(sites);
-  $('#bErr').hidden = true;
+  showAll = false;
   $('#dlgEdit').showModal();
 }
 function renderMyList(){
@@ -596,12 +589,22 @@ function renderMyList(){
     : '<div class="row"><div class="t"><span>Niciun sit în listă.</span></div></div>';
 }
 const norm = t => t.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+let showAll = false;
+const PREVIEW = 10;
 function renderResults(){
   const q = norm($('#q').value.trim()), have = new Set(sites.map(key));
-  const list = RO_SITES.filter(s => !have.has(key(s)) && (!q || norm(s.n).includes(q))).slice(0, q ? 40 : 8);
-  $('#results').innerHTML = list.length ? list.map(s => `<div class="row">${roseSvg(s.o)}<div class="t"><b>${esc(s.n)}</b><span>${s.alt ? s.alt+' m · ' : ''}${s.lat.toFixed(3)}, ${s.lon.toFixed(3)}</span></div>
-    <div class="acts"><button class="add" data-add="${RO_SITES.indexOf(s)}" aria-label="Adaugă ${esc(s.n)}">+</button></div></div>`).join('')
-    : '<div class="row"><div class="t"><span>Niciun rezultat. Îl poți adăuga manual mai jos.</span></div></div>';
+  // Distanța până la cel mai apropiat sit din lista ta.
+  const near = s => { let best = null; for (const m of sites){ const km = distKm(s.lat, s.lon, m.lat, m.lon); if (!best || km < best.km) best = {km, n: m.n}; } return best; };
+  const all = RO_SITES.map((s, i) => ({s, i, near: near(s)})).filter(x => !have.has(key(x.s)));
+  if (sites.length) all.sort((a, b) => a.near.km - b.near.km); 
+  const matches = q ? all.filter(x => norm(x.s.n).includes(q)) : all;
+  const shown = q || showAll ? matches : matches.slice(0, PREVIEW);
+  const meta = x => [x.s.alt ? x.s.alt + ' m' : '', x.near ? `${Math.round(x.near.km)} km de ${esc(x.near.n)}` : ''].filter(Boolean).join(' · ');
+  let html = shown.map(x => `<div class="row">${roseSvg(x.s.o)}<div class="t"><b>${esc(x.s.n)}</b><span>${meta(x)}</span></div>
+    <div class="acts"><button class="add" data-add="${x.i}" aria-label="Adaugă ${esc(x.s.n)}">+</button></div></div>`).join('');
+  if (!shown.length) html = '<div class="row"><div class="t"><span>Niciun rezultat. Îl poți adăuga manual mai jos.</span></div></div>';
+  if (!q && matches.length > PREVIEW) html += `<button class="more" id="toggleAll" type="button">${showAll ? 'Arată mai puține' : `Arată toate cele ${matches.length} situri`}</button>`;
+  $('#results').innerHTML = html;
 }
 function renderManualRose(){
   const order = [7,0,1,6,-1,2,5,4,3];
@@ -635,20 +638,7 @@ document.addEventListener('click', e => {
   if (t.dataset.add != null){ const s = structuredClone(RO_SITES[+t.dataset.add]); sites.push(s); saveSites(); renderMyList(); renderResults(); toast(`${s.n} a fost adăugat`); load(); return; }
   if (t.dataset.rose != null){ const i = +t.dataset.rose; manualRose[i] = (manualRose[i] + 1) % 3; renderManualRose(); $(`[data-rose="${i}"]`).focus(); return; }
   if (t.id === 'resetSettings'){ settings = {...DEFAULT_SETTINGS}; store.set('vld.settings', settings); fillSettings(); render(); toast('Praguri implicite'); return; }
-  if (t.id === 'copyBackup'){
-    const ta = $('#backup'); ta.value = JSON.stringify(sites);
-    navigator.clipboard?.writeText(ta.value).then(() => toast('Lista a fost copiată'), () => { ta.select(); toast('Selectează și copiază textul'); });
-    return;
-  }
-  if (t.id === 'importBackup'){
-    const err = $('#bErr');
-    try{
-      const arr = JSON.parse($('#backup').value);
-      if (!Array.isArray(arr) || !arr.every(s => s && typeof s.n === 'string' && isFinite(s.lat) && isFinite(s.lon) && Array.isArray(s.o) && s.o.length === 8)) throw 0;
-      sites = arr; saveSites(); err.hidden = true; renderMyList(); renderResults(); toast(`Am încărcat ${sites.length} situri`); load();
-    }catch{ err.textContent = 'Textul nu e o listă validă. Lipește exact textul copiat cu „Copiază lista”.'; err.hidden = false; }
-    return;
-  }
+  if (t.id === 'toggleAll'){ showAll = !showAll; renderResults(); return; }
   if (t.id === 'resetSites'){
     if (t.dataset.armed){ sites = structuredClone(DEFAULT_SITES); saveSites(); renderMyList(); renderResults(); toast('Lista inițială a fost refăcută'); load(); delete t.dataset.armed; t.textContent = 'Revino la lista inițială'; }
     else { t.dataset.armed = 1; t.textContent = 'Apasă din nou pentru confirmare'; setTimeout(() => { delete t.dataset.armed; t.textContent = 'Revino la lista inițială'; }, 4000); }

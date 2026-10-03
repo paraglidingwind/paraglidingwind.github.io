@@ -36,6 +36,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -45,12 +46,11 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -61,6 +61,8 @@ import kotlinx.coroutines.launch
 import ro.parapanta.vant.model.DIRS
 import ro.parapanta.vant.model.HolfuyLink
 import ro.parapanta.vant.model.parseHolfuyId
+import ro.parapanta.vant.model.distKm
+import kotlin.math.roundToInt
 import ro.parapanta.vant.model.Site
 import ro.parapanta.vant.model.Thresholds
 import ro.parapanta.vant.model.key
@@ -68,6 +70,8 @@ import ro.parapanta.vant.model.parseCoords
 import ro.parapanta.vant.model.trim
 import java.text.Normalizer
 import java.util.Locale
+
+private const val PREVIEW = 10
 
 private fun norm(s: String) = Normalizer.normalize(s, Normalizer.Form.NFD).replace(Regex("\\p{Mn}+"), "").lowercase()
 
@@ -81,7 +85,13 @@ fun EditScreen(vm: MainViewModel, state: UiState, onClose: () -> Unit) {
     var query by remember { mutableStateOf("") }
     val have = state.sites.map { it.key }.toSet()
     val q = norm(query.trim())
-    val results = vm.repo.roSites.filter { it.key !in have && (q.isEmpty() || norm(it.n).contains(q)) }.take(if (q.isEmpty()) 8 else 40)
+    var showAll by rememberSaveable { mutableStateOf(false) }
+    // Toate siturile din România, ordonate după distanța până la cel mai apropiat sit din lista ta.
+    val all = vm.repo.roSites.filter { it.key !in have }.map { s ->
+        s to state.sites.map { m -> m to distKm(s.lat, s.lon, m.lat, m.lon) }.minByOrNull { it.second }
+    }.let { l -> if (state.sites.isEmpty()) l else l.sortedBy { it.second!!.second } }
+    val matches = if (q.isEmpty()) all else all.filter { norm(it.first.n).contains(q) }
+    val results = if (q.isNotEmpty() || showAll) matches else matches.take(PREVIEW)
 
     Scaffold(
         containerColor = p.bg,
@@ -104,23 +114,31 @@ fun EditScreen(vm: MainViewModel, state: UiState, onClose: () -> Unit) {
                     IconButton(onClick = { vm.remove(i); toast("${s.n} a fost șters") }) { Icon(Icons.Filled.Close, "Șterge ${s.n}", tint = p.no) }
                 }
             }
+            item { ResetButton(onReset = { vm.resetSites(); toast("Lista inițială a fost refăcută") }) }
 
             item {
-                Section("Adaugă de pe ParaglidingEarth")
+                Section("Toate siturile din România")
+                Text("De pe ParaglidingEarth, ordonate după distanța față de siturile tale. Apasă + ca să adaugi.",
+                    color = p.muted, fontSize = 13.sp, modifier = Modifier.padding(bottom = 8.dp))
                 OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth(), singleLine = true,
-                    placeholder = { Text("Caută un sit din România (ex: Bunloc)") })
+                    placeholder = { Text("Caută după nume (ex: Bunloc)") })
                 Spacer(Modifier.height(6.dp))
             }
             if (results.isEmpty()) item { Text("Niciun rezultat. Îl poți adăuga manual mai jos.", color = p.muted, modifier = Modifier.padding(vertical = 8.dp)) }
-            itemsIndexed(results, key = { _, s -> "ro" + s.key + s.n }) { _, s ->
-                SiteRow(s) {
+            itemsIndexed(results, key = { _, r -> "ro" + r.first.key + r.first.n }) { _, (s, near) ->
+                val meta = listOfNotNull(s.alt?.let { "$it m" }, near?.let { (m, km) -> "${km.roundToInt()} km de ${m.n}" }).joinToString(" · ")
+                SiteRow(s, meta = meta) {
                     IconButton(onClick = { vm.add(s); toast("${s.n} a fost adăugat") }) { Icon(Icons.Filled.Add, "Adaugă ${s.n}", tint = p.accent) }
+                }
+            }
+            if (q.isEmpty() && matches.size > PREVIEW) item {
+                TextButton(onClick = { showAll = !showAll }, Modifier.fillMaxWidth().height(48.dp)) {
+                    Text(if (showAll) "Arată mai puține" else "Arată toate cele ${matches.size} situri", fontWeight = FontWeight.Bold)
                 }
             }
 
             item { ManualForm(onAdd = { vm.add(it); toast("${it.n} a fost adăugat") }) }
             item { ThresholdsForm(state.th, vm::setThresholds) }
-            item { Backup(vm, ::toast) }
             item { Spacer(Modifier.height(40.dp)) }
         }
     }
@@ -133,14 +151,14 @@ private fun Section(t: String) {
 }
 
 @Composable
-private fun SiteRow(s: Site, station: HolfuyLink? = null, actions: @Composable () -> Unit) {
+private fun SiteRow(s: Site, station: HolfuyLink? = null, meta: String? = null, actions: @Composable () -> Unit) {
     val p = LocalPalette.current
     Row(Modifier.fillMaxWidth().height(56.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Rose(s.o, Modifier.size(24.dp))
         Column(Modifier.weight(1f)) {
             Text(s.n, color = p.ink, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text((s.alt?.let { "$it m · " } ?: "") + String.format(Locale.US, "%.3f, %.3f", s.lat, s.lon) +
-                (station?.let { " · Holfuy ${it.station.n}" } ?: ""), color = p.muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(meta ?: ((s.alt?.let { "$it m · " } ?: "") + String.format(Locale.US, "%.3f, %.3f", s.lat, s.lon) +
+                (station?.let { " · Holfuy ${it.station.n}" } ?: "")), color = p.muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         actions()
     }
@@ -238,24 +256,10 @@ private fun ThresholdsForm(th: Thresholds, onChange: (Thresholds) -> Unit) {
 }
 
 @Composable
-private fun Backup(vm: MainViewModel, toast: (String) -> Unit) {
-    val p = LocalPalette.current
-    val clip = LocalClipboardManager.current
+private fun ResetButton(onReset: () -> Unit) {
     var armed by remember { mutableStateOf(false) }
     LaunchedEffect(armed) { if (armed) { delay(4000); armed = false } }
-    Column {
-        Section("Backup")
-        Text("Lista e salvată pe acest telefon. Copiaz-o ca text ca s-o muți pe alt dispozitiv sau în pagina web.", color = p.muted, fontSize = 13.sp)
-        @OptIn(ExperimentalLayoutApi::class)
-        FlowRow(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = { clip.setText(AnnotatedString(vm.exportJson())); toast("Lista a fost copiată") }) { Text("Copiază lista") }
-            OutlinedButton(onClick = {
-                val n = clip.getText()?.text?.let(vm::importJson)
-                toast(if (n != null) "Am încărcat $n situri" else "În clipboard nu e o listă validă")
-            }) { Text("Lipește lista") }
-            OutlinedButton(onClick = {
-                if (armed) { vm.resetSites(); armed = false; toast("Lista inițială a fost refăcută") } else armed = true
-            }) { Text(if (armed) "Apasă din nou pentru confirmare" else "Revino la lista inițială", color = p.no) }
-        }
+    OutlinedButton(onClick = { if (armed) { onReset(); armed = false } else armed = true }, Modifier.padding(top = 8.dp)) {
+        Text(if (armed) "Apasă din nou pentru confirmare" else "Revino la lista inițială", color = LocalPalette.current.no)
     }
 }

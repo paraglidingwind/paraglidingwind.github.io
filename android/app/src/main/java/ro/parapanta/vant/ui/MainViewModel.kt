@@ -8,8 +8,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
 import ro.parapanta.vant.data.Repo
 import ro.parapanta.vant.model.ForecastCache
 import ro.parapanta.vant.model.HolfuyLink
@@ -93,14 +91,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         setSites(l)
     }
     fun resetSites() = setSites(repo.defaultSites, fetch = true)
-
-    fun exportJson(): String = repo.json.encodeToString(_state.value.sites)
-    fun importJson(text: String): Int? {
-        val list = runCatching { repo.json.decodeFromString<List<Site>>(text) }.getOrNull() ?: return null
-        if (list.any { it.o.size != 8 }) return null
-        setSites(list, fetch = true)
-        return list.size
-    }
 
     fun setThresholds(t: Thresholds) {
         val fixed = if (t.from > t.to) t.copy(from = t.to, to = t.from) else t
