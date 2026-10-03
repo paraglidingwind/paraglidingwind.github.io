@@ -1263,6 +1263,25 @@ $('#dlgEdit').addEventListener('close', () => render());
 document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
 setInterval(() => { if (!loading && fc) $('#status').textContent = t('Actualizat {t} · Open-Meteo', {t: agoTxt(fc.at)}); }, 60000);
 
+/* Mutarea de pe adresa veche (camarasanvlad89.github.io/vant-la-decolare): pagina de acolo trimite datele în #migrate=…
+   Lista de situri se preia întocmai dacă aici nu există încă una; zilele de zbor se unesc fără dubluri. */
+(function migrateFromOldAddress(){
+  const m = location.hash.match(/^#migrate=([A-Za-z0-9_-]+)$/); if (!m) return;
+  history.replaceState(null, '', location.pathname + location.search);
+  let d;
+  try { d = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(m[1].replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0)))); } catch { return; }
+  if (Array.isArray(d.sites) && d.sites.length){
+    if (store.get('vld.sites', null) === null) sites = d.sites;
+    else { const ks = new Set(sites.map(key)); for (const x of d.sites) if (!ks.has(key(x))){ ks.add(key(x)); sites.push(x); } }
+    saveSites();
+  }
+  if (d.settings && store.get('vld.settings', null) === null){ settings = {...DEFAULT_SETTINGS, ...d.settings}; store.set('vld.settings', settings); }
+  if (Array.isArray(d.flights) && d.flights.length){
+    const r = syncMerge({flights, tomb}, {flights: d.flights, tomb: d.tomb || {}});
+    flights = r.flights; tomb = r.tomb; saveFlights(); store.set('vld.tomb', tomb); store.set('vld.dirty', true);
+  }
+  setTimeout(() => toast(t('Am adus datele de pe adresa veche.')), 500);
+})();
 translateStatic();
 render(); scrollToNow();
 if (GOOGLE_CLIENT_ID && gAcct && tokenValid()) syncNow();

@@ -1,7 +1,10 @@
-# Vânt la Decolare
+# Paragliding Wind · Vânt la Decolare
 
-Listă cu decolările de parapantă și vântul pe ore (direcție, m/s, rafale), colorată după cât de favorabil e vântul pentru orientarea fiecărei decolări.
+https://paraglidingwind.com
 
-- Prognoza: [Open-Meteo](https://open-meteo.com) (live, din browser).
-- Siturile din România: snapshot din [ParaglidingEarth](https://www.paraglidingearth.com) în `data/ro_sites.json`.
-- `src/index.html` este sursa; `python3 build.py` generează `docs/index.html` (servit de GitHub Pages).
+Hourly wind for paragliding takeoffs, rated against each takeoff's orientation · Vântul pe ore pentru decolările de parapantă, colorat după orientarea fiecărei decolări.
+
+- Prognoza: [Open-Meteo](https://open-meteo.com). Situri: [ParaglidingEarth](https://www.paraglidingearth.com) (`data/ro_sites.json`). Vânt live: [Holfuy](https://holfuy.com).
+- `src/index.html` e sursa; `python3 build.py` generează `docs/` (servit de GitHub Pages pe paraglidingwind.com).
+- Traduceri: `data/i18n_en.json` (română → engleză).
+- Aplicația Android: `android/`.

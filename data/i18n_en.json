@@ -12,7 +12,6 @@
   "Pictograma: cerul și tipul de nori · săgeata: încotro bate vântul · cifra mare: vânt la 10 m, mică: rafale (m/s)": "Icon: sky and cloud type · arrow: where the wind blows to · big number: wind at 10 m, small: gusts (m/s)",
   "Confidențialitate": "Privacy",
   "Închide": "Close",
-
   "Locație": "Site",
   "Numele locației": "Site name",
   "Data": "Date",
@@ -27,7 +26,6 @@
   "Zi de zbor": "Flying day",
   "Editează ziua de zbor": "Edit flying day",
   "Altă locație…": "Other site…",
-
   "Situri și setări": "Sites & settings",
   "Lista ta": "Your list",
   "Revino la lista inițială": "Restore the initial list",
@@ -60,7 +58,6 @@
   "De la ora": "From hour",
   "Până la ora": "To hour",
   "Praguri implicite": "Default thresholds",
-
   "Bun de zbor": "Flyable",
   "Nu e de zbor": "Not flyable",
   "Calm (fără vânt)": "Calm (no wind)",
@@ -74,7 +71,6 @@
   "Rafale {v} m/s (peste {lim})": "Gusts {v} m/s (above {lim})",
   "Turbulent: rafalele depășesc vântul cu {v} m/s": "Turbulent: gusts exceed the wind by {v} m/s",
   "Ploaie {v} mm/h": "Rain {v} mm/h",
-
   "Senin": "Clear",
   "Predominant senin": "Mostly clear",
   "Parțial noros": "Partly cloudy",
@@ -110,7 +106,6 @@
   "Strat la altitudine medie: umbrește solul, termice slabe.": "Mid-level layer: shades the ground, weak thermals.",
   "Nori înalți subțiri: adesea anunță un front.": "Thin high clouds: often ahead of a front.",
   "Văl înalt: slăbește termicele.": "High veil: weakens thermals.",
-
   "Serverul de prognoză a răspuns {s}": "The forecast server answered {s}",
   "Ești offline.": "You are offline.",
   "Eroare de rețea.": "Network error.",
@@ -129,7 +124,6 @@
   "{n} ora {h}: {st}, {d} {v} metri pe secundă, {sky}": "{n} at {h}:00: {st}, {d} {v} metres per second, {sky}",
   "acum": "just now",
   "acum {m} min": "{m} min ago",
-
   "Cer": "Sky",
   "Vânt la 10 m": "Wind at 10 m",
   "Rafale": "Gusts",
@@ -140,7 +134,6 @@
   "{v} m/s din {d}": "{v} m/s from {d}",
   "(jos {lo} · mediu {mi} · sus {hi})": "(low {lo} · mid {mi} · high {hi})",
   " · risc de dezvoltări": " · risk of overdevelopment",
-
   "ora {h}": "{h}:00",
   "vânt din {d} {r} m/s": "wind from {d} {r} m/s",
   "1 oră": "1 hour",
@@ -163,7 +156,6 @@
   "Vântul acum la {n}": "Current wind at {n}",
   "Stația {id}": "Station {id}",
   "Hartă": "Map",
-
   "Mută {n} mai sus": "Move {n} up",
   "Mută {n} mai jos": "Move {n} down",
   "Șterge {n}": "Delete {n}",
@@ -184,7 +176,6 @@
   "Linkurile scurte Google Maps nu conțin coordonatele. Deschide linkul, ține apăsat pe decolare și copiază coordonatele.": "Short Google Maps links don't contain the coordinates. Open the link, long-press the takeoff and copy the coordinates.",
   "Coordonatele nu sunt valide. Exemplu: 46.6129, 23.4350": "These coordinates aren't valid. Example: 46.6129, 23.4350",
   "Alege cel puțin o direcție bună de vânt.": "Pick at least one good wind direction.",
-
   "1 zi": "1 day",
   "{n} zile": "{n} days",
   "în aer": "airtime",
@@ -212,7 +203,6 @@
   "Salvat: {s}, {d}": "Saved: {s}, {d}",
   "Apasă din nou pentru ștergere": "Tap again to delete",
   "Șters": "Deleted",
-
   "Zile de zbor": "Flying days",
   "Situri": "Sites",
   "Timp în aer": "Airtime",
@@ -233,7 +223,6 @@
   "Nu am putut citi fișierul. Alege un fișier exportat din jurnal.": "Couldn't read the file. Choose a file exported from the log.",
   "Fișierul nu conține zile de zbor.": "The file contains no flying days.",
   "Fișierul Excel a fost descărcat": "Excel file downloaded",
-
   "Conectarea la Google a expirat sau a fost anulată.": "The Google sign-in expired or was cancelled.",
   "Sincronizarea nu a reușit. Verifică internetul și încearcă din nou.": "Sync failed. Check your connection and try again.",
   "Jurnalul pe toate dispozitivele.": "Your log on every device.",
@@ -248,7 +237,6 @@
   "Apasă din nou: jurnalul rămâne în Drive și se șterge de pe acest dispozitiv": "Tap again: the log stays in Drive and is removed from this device",
   "Deconectează-te": "Sign out",
   "Te-ai deconectat. Jurnalul e în siguranță în Drive.": "Signed out. Your log is safe in Drive.",
-
   "Harta nu s-a putut încărca. Verifică internetul sau completează câmpurile de mână.": "The map couldn't load. Check your connection or fill in the fields by hand.",
   "Relief": "Terrain",
   "Satelit": "Satellite",
@@ -264,5 +252,6 @@
   "Telefonul nu oferă localizare în acest browser.": "Location isn't available in this browser.",
   "Caut poziția GPS…": "Getting your GPS position…",
   "Ai refuzat accesul la locație. Îl poți permite din setările browserului.": "Location access was denied. You can allow it in the browser settings.",
-  "Nu am putut afla poziția. Încearcă din nou sau pune pinul pe hartă.": "Couldn't get your position. Try again or drop the pin on the map."
+  "Nu am putut afla poziția. Încearcă din nou sau pune pinul pe hartă.": "Couldn't get your position. Try again or drop the pin on the map.",
+  "Am adus datele de pe adresa veche.": "Your data was brought over from the old address."
 }
