@@ -9,7 +9,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.Typography
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import ro.parapanta.vant.R
 import androidx.compose.ui.text.font.FontWeight
 import ro.parapanta.vant.model.Status
 
@@ -44,11 +48,25 @@ private val Dark = Palette(
 
 val LocalPalette = staticCompositionLocalOf { Light }
 
-/** Roboto Condensed, prezent pe toate telefoanele Android. */
+/** Aceleași fonturi ca pagina web: Barlow Semi Condensed pentru text, Barlow Condensed pentru titluri. */
 val Condensed = FontFamily(
-    androidx.compose.ui.text.font.Typeface(android.graphics.Typeface.create("sans-serif-condensed", android.graphics.Typeface.NORMAL))
+    Font(R.font.barlow_sc_regular, FontWeight.Normal),
+    Font(R.font.barlow_sc_medium, FontWeight.Medium),
+    Font(R.font.barlow_sc_semibold, FontWeight.SemiBold),
+    Font(R.font.barlow_sc_bold, FontWeight.Bold),
 )
-val CondensedBold = FontWeight.Bold
+val Display = FontFamily(Font(R.font.barlow_c_bold, FontWeight.Bold))
+
+private val AppTypography = Typography().let { t ->
+    fun TextStyle.c() = copy(fontFamily = Condensed)
+    Typography(
+        displayLarge = t.displayLarge.c(), displayMedium = t.displayMedium.c(), displaySmall = t.displaySmall.c(),
+        headlineLarge = t.headlineLarge.c(), headlineMedium = t.headlineMedium.c(), headlineSmall = t.headlineSmall.c(),
+        titleLarge = t.titleLarge.c(), titleMedium = t.titleMedium.c(), titleSmall = t.titleSmall.c(),
+        bodyLarge = t.bodyLarge.c(), bodyMedium = t.bodyMedium.c(), bodySmall = t.bodySmall.c(),
+        labelLarge = t.labelLarge.c().copy(fontWeight = FontWeight.SemiBold), labelMedium = t.labelMedium.c(), labelSmall = t.labelSmall.c(),
+    )
+}
 
 @Composable
 fun VantTheme(content: @Composable () -> Unit) {
@@ -66,6 +84,6 @@ fun VantTheme(content: @Composable () -> Unit) {
         surfaceContainerHigh = p.surface, error = p.no,
     )
     CompositionLocalProvider(LocalPalette provides p) {
-        MaterialTheme(colorScheme = scheme, content = content)
+        MaterialTheme(colorScheme = scheme, typography = AppTypography, content = content)
     }
 }

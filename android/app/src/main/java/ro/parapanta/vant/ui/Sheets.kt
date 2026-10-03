@@ -46,7 +46,7 @@ private fun Sheet(title: String, onDismiss: () -> Unit, content: @Composable () 
     val p = LocalPalette.current
     ModalBottomSheet(onDismissRequest = onDismiss, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = p.surface) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp).navigationBarsPadding().padding(bottom = 16.dp)) {
-            Text(title.uppercase(), color = p.ink, fontSize = 20.sp, fontWeight = FontWeight.Bold, fontFamily = Condensed, letterSpacing = .4.sp)
+            Text(title.uppercase(), color = p.ink, fontSize = 20.sp, fontWeight = FontWeight.Bold, fontFamily = Display, letterSpacing = .4.sp)
             Spacer(Modifier.height(12.dp))
             content()
         }
@@ -74,7 +74,7 @@ fun CellSheet(state: UiState, si: Int, h: String, onDismiss: () -> Unit) {
             r.reasons.forEach { Text("• $it", color = p.ink, fontSize = 15.sp) }
         }
         val k = sky(w)
-        Text("CER", color = p.muted, fontWeight = FontWeight.Bold, fontFamily = Condensed, letterSpacing = .8.sp,
+        Text("CER", color = p.muted, fontWeight = FontWeight.Bold, fontFamily = Display, letterSpacing = .8.sp,
             modifier = Modifier.padding(top = 16.dp, bottom = 6.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             SkyIcon(k.icon, Modifier.size(30.dp))
@@ -117,7 +117,7 @@ fun SiteSheet(state: UiState, si: Int, onDismiss: () -> Unit) {
                 Text(String.format(Locale.US, "%.4f, %.4f", site.lat, site.lon), color = p.muted)
             }
         }
-        Text("SĂPTĂMÂNA", color = p.muted, fontWeight = FontWeight.Bold, fontFamily = Condensed, letterSpacing = .8.sp,
+        Text("SĂPTĂMÂNA", color = p.muted, fontWeight = FontWeight.Bold, fontFamily = Display, letterSpacing = .8.sp,
             modifier = Modifier.padding(top = 18.dp, bottom = 6.dp))
         state.dates.forEachIndexed { i, d ->
             val st = state.bestOfDay(site, d)

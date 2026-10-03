@@ -202,7 +202,7 @@ fun DayStrip(state: UiState, onSelect: (Int) -> Unit) {
                     .padding(horizontal = 10.dp, vertical = 7.dp)
                     .width(64.dp)
             ) {
-                Text(dayName(d, i).uppercase(), color = if (sel) p.accent else p.ink, fontWeight = FontWeight.Bold, fontSize = 15.sp, fontFamily = Condensed, letterSpacing = .4.sp)
+                Text(dayName(d, i).uppercase(), color = if (sel) p.accent else p.ink, fontWeight = FontWeight.Bold, fontSize = 15.sp, fontFamily = Display, letterSpacing = .4.sp)
                 Text(dayDate(d), color = p.muted, fontSize = 12.sp, fontFamily = Condensed)
                 Spacer(Modifier.height(6.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {

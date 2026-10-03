@@ -86,7 +86,7 @@ fun EditScreen(vm: MainViewModel, state: UiState, onClose: () -> Unit) {
         snackbarHost = { SnackbarHost(snack) },
         topBar = {
             TopAppBar(
-                title = { Text("SITURI ȘI SETĂRI", fontFamily = Condensed, fontWeight = FontWeight.Bold, fontSize = 20.sp) },
+                title = { Text("SITURI ȘI SETĂRI", fontFamily = Display, fontWeight = FontWeight.Bold, fontSize = 20.sp) },
                 navigationIcon = { IconButton(onClick = onClose) { Icon(Icons.Filled.Close, contentDescription = "Închide") } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = p.bg),
             )
@@ -126,7 +126,7 @@ fun EditScreen(vm: MainViewModel, state: UiState, onClose: () -> Unit) {
 
 @Composable
 private fun Section(t: String) {
-    Text(t.uppercase(), color = LocalPalette.current.muted, fontWeight = FontWeight.Bold, fontFamily = Condensed,
+    Text(t.uppercase(), color = LocalPalette.current.muted, fontWeight = FontWeight.Bold, fontFamily = Display,
         letterSpacing = .8.sp, fontSize = 14.sp, modifier = Modifier.padding(top = 20.dp, bottom = 8.dp))
 }
 

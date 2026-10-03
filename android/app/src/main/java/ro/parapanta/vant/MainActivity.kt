@@ -48,6 +48,7 @@ import kotlinx.coroutines.delay
 import ro.parapanta.vant.ui.Board
 import ro.parapanta.vant.ui.CellSheet
 import ro.parapanta.vant.ui.Condensed
+import ro.parapanta.vant.ui.Display
 import ro.parapanta.vant.ui.DayStrip
 import ro.parapanta.vant.ui.EditScreen
 import ro.parapanta.vant.ui.EmptyBoard
@@ -105,7 +106,7 @@ fun App(vm: MainViewModel = viewModel()) {
     Column(Modifier.fillMaxSize().background(p.bg).safeDrawingPadding()) {
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 10.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("VÂNT LA DECOLARE", color = p.ink, fontSize = 22.sp, fontWeight = FontWeight.Bold, fontFamily = Condensed, letterSpacing = .5.sp)
+                Text("VÂNT LA DECOLARE", color = p.ink, fontSize = 22.sp, fontWeight = FontWeight.Bold, fontFamily = Display, letterSpacing = .5.sp)
                 Text(
                     when {
                         state.loading -> "Se descarcă prognoza…"
