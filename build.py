@@ -24,3 +24,8 @@ kt.append(")")
 for f in ("ro_sites.json", "initial_sites.json", "holfuy_ro.json"):
     (root / "android/app/src/main/assets" / f).write_text((root / "data" / f).read_text())
 print("android SkyIcons.kt + assets")
+
+# Decolările din toată lumea și stațiile Holfuy, încărcate de pagină la nevoie.
+for src, dst in (("world_sites.json", "sites.json"), ("holfuy_world.json", "holfuy.json")):
+    (root / "docs" / dst).write_text((root / "data" / src).read_text())
+print("docs/sites.json + docs/holfuy.json")

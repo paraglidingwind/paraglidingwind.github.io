@@ -227,6 +227,7 @@ input.in,textarea.in,select.in{width:100%;min-height:44px;padding:9px 12px;borde
     <span class="k"><i class="calm"></i>Calm</span>
     <span>Pictograma: cerul și tipul de nori · săgeata: încotro bate vântul · cifra mare: vânt la 10 m, mică: rafale (m/s)</span>
     <a href="confidentialitate.html" style="color:var(--muted)">Confidențialitate</a>
+    <a href="termeni.html" style="color:var(--muted)">Termeni</a>
     <a id="langSw" href="?lang=en" style="color:var(--accent);font-weight:600">English</a>
   </div>
 </div>
@@ -274,9 +275,10 @@ input.in,textarea.in,select.in{width:100%;min-height:44px;padding:9px 12px;borde
 
     <button class="btn small danger" id="resetSites" type="button" style="margin-top:8px">Revino la lista inițială</button>
 
-    <h3>Toate siturile din România</h3>
-    <p class="hint" style="margin:0 0 8px">De pe ParaglidingEarth, ordonate după distanța față de siturile tale. Apasă + ca să adaugi.</p>
-    <input class="in" id="q" type="search" placeholder="Caută un sit din România (ex: Bunloc)" autocomplete="off">
+    <h3>Toate decolările</h3>
+    <p class="hint" id="allHint" style="margin:0 0 8px"></p>
+    <div class="actions" style="margin:0 0 8px"><button class="btn small" type="button" id="nearMe">Lângă mine (GPS)</button></div>
+    <input class="in" id="q" type="search" placeholder="Caută o decolare (ex: Bunloc)" autocomplete="off">
     <div class="list" id="results" style="margin-top:8px"></div>
 
     <h3>Adaugă o locație nouă</h3>
@@ -349,13 +351,13 @@ function translateStatic(){
     for (const el of document.querySelectorAll('[placeholder],[aria-label],[title]'))
       for (const a of ['placeholder', 'aria-label', 'title']){ const v = el.getAttribute(a); if (v && EN[v]) el.setAttribute(a, EN[v]); }
     for (const a of document.querySelectorAll('a[href="confidentialitate.html"]')) a.href = PRIVACY;
+    for (const a of document.querySelectorAll('a[href="termeni.html"]')) a.href = 'terms.html';
   }
   const sw = $('#langSw'); sw.textContent = LANG === 'en' ? 'Română' : 'English'; sw.href = '?lang=' + (LANG === 'en' ? 'ro' : 'en');
 }
-const RO_SITES = __RO_SITES__;
 const DEFAULT_SITES = __DEFAULT_SITES__;
 const SKY_ICONS = __SKY_ICONS__;
-const HOLFUY = __HOLFUY__;
+let HOLFUY = [];   // stațiile Holfuy din toată lumea, din holfuy.json (încărcat la pornire)
 const GOOGLE_CLIENT_ID = __GOOGLE_CLIENT_ID__;
 const HOLFUY_MAX_KM = 5;
 const DIRS = LANG === 'en' ? ['N','NE','E','SE','S','SW','W','NW'] : ['N','NE','E','SE','S','SV','V','NV'];
@@ -372,7 +374,30 @@ const store = {
   set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)) }catch{} }
 };
 
-let sites = store.get('vld.sites', null) || structuredClone(DEFAULT_SITES);
+/* Fusul orar al telefonului: dă ora prognozei și o zonă aproximativă pentru ordonarea decolărilor, fără să cerem locația. */
+const TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch { return ''; } })();
+const TZ_POINT = ({
+  'Europe/Bucharest':[45.9,24.9], 'Europe/Chisinau':[47.0,28.8], 'Europe/Vienna':[47.4,13.8], 'Europe/Zurich':[46.7,8.2], 'Europe/Berlin':[50.5,10.5],
+  'Europe/Paris':[45.5,4.5], 'Europe/Rome':[44.0,11.5], 'Europe/Madrid':[40.2,-3.7], 'Europe/London':[53.0,-1.8], 'Europe/Dublin':[53.3,-8.0],
+  'Europe/Lisbon':[39.6,-8.0], 'Europe/Amsterdam':[52.2,5.5], 'Europe/Brussels':[50.5,4.6], 'Europe/Luxembourg':[49.8,6.1], 'Europe/Ljubljana':[46.1,14.8],
+  'Europe/Zagreb':[45.3,16.0], 'Europe/Budapest':[47.2,19.4], 'Europe/Prague':[49.8,15.5], 'Europe/Bratislava':[48.7,19.5], 'Europe/Warsaw':[50.5,19.4],
+  'Europe/Sofia':[42.7,25.3], 'Europe/Athens':[39.0,22.0], 'Europe/Istanbul':[38.5,32.0], 'Europe/Belgrade':[44.0,20.9], 'Europe/Sarajevo':[43.9,17.7],
+  'Europe/Skopje':[41.6,21.7], 'Europe/Podgorica':[42.7,19.3], 'Europe/Tirane':[41.2,20.0], 'Europe/Kyiv':[49.0,31.0], 'Europe/Kiev':[49.0,31.0],
+  'Europe/Oslo':[61.0,9.0], 'Europe/Stockholm':[62.0,15.0], 'Europe/Helsinki':[62.0,26.0], 'Europe/Copenhagen':[56.0,9.5], 'Europe/Monaco':[43.74,7.42],
+  'Europe/Andorra':[42.5,1.5], 'Europe/Vaduz':[47.14,9.55], 'Europe/Malta':[35.9,14.4], 'Atlantic/Canary':[28.3,-16.5], 'Asia/Nicosia':[35.0,33.0],
+  'America/New_York':[40.0,-75.0], 'America/Chicago':[39.0,-90.0], 'America/Denver':[39.5,-105.5], 'America/Los_Angeles':[36.5,-120.0],
+  'America/Sao_Paulo':[-22.5,-45.0], 'Africa/Johannesburg':[-29.0,25.0], 'Asia/Kathmandu':[28.0,84.0], 'Asia/Kolkata':[22.0,78.0],
+  'Australia/Sydney':[-33.8,151.0], 'Pacific/Auckland':[-40.9,174.9],
+})[TZ] || null;
+/* Lista inițială: cele 6 decolări din zona Cluj doar pentru cine e în România; în rest pornim cu lista goală. */
+let sites = store.get('vld.sites', null) || (TZ === 'Europe/Bucharest' || !TZ ? structuredClone(DEFAULT_SITES) : []);
+/* Toate decolările de pe ParaglidingEarth (≈11.500), din sites.json, încărcate doar când e nevoie (editare, hartă). */
+let ALL_SITES = null, allSitesP = null, refPoint = null;
+function loadAllSites(){
+  if (!allSitesP) allSitesP = fetch('sites.json').then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(d => (ALL_SITES = d)).catch(e => { allSitesP = null; throw e; });
+  return allSitesP;
+}
 let settings = {...DEFAULT_SETTINGS, ...store.get('vld.settings', {})};
 let fc = store.get('vld.fc2', null);   // {at, bySite:{key:{...}}}
 let dayIdx = 0;
@@ -474,7 +499,7 @@ async function load(force){
       latitude: sites.map(s => s.lat).join(','),
       longitude: sites.map(s => s.lon).join(','),
       elevation: sites.map(s => s.alt ?? 'nan').join(','),
-      hourly: HOURLY, wind_speed_unit:'ms', timezone:'Europe/Bucharest', forecast_days:'7'
+      hourly: HOURLY, wind_speed_unit:'ms', timezone: TZ || 'auto', forecast_days:'7'
     });
     const r = await fetch('https://api.open-meteo.com/v1/forecast?' + p);
     if (!r.ok) throw new Error(t('Serverul de prognoză a răspuns {s}', {s: r.status}));
@@ -558,7 +583,7 @@ function render(){
   // tabla
   const board = $('#board');
   if (!sites.length){
-    board.innerHTML = `<div class="empty">${t('Lista e goală. Adaugă decolările la care zbori ca să le vezi vântul pe ore.')}<br><button class="btn primary" data-open-edit>${t('Adaugă situri')}</button></div>`;
+    board.innerHTML = `<div class="empty">${t('Lista e goală. Adaugă decolările la care zbori ca să le vezi vântul pe ore.')}<div class="actions"><button class="btn primary" id="findNear" type="button">${t('Găsește decolări lângă mine')}</button><button class="btn" data-open-edit type="button">${t('Adaugă situri')}</button></div></div>`;
     return;
   }
   if (!ds.length){
@@ -677,7 +702,7 @@ function siteLinks(s){
 let manualRose = [0,0,0,0,0,0,0,0];
 function openEdit(){
   renderMyList(); renderResults(); renderManualRose(); fillSettings();
-  showAll = false;
+  shownN = PREVIEW; loadAllSites().catch(() => {});
   $('#dlgEdit').showModal();
 }
 function renderMyList(){
@@ -686,22 +711,37 @@ function renderMyList(){
     : `<div class="row"><div class="t"><span>${t('Niciun sit în listă.')}</span></div></div>`;
 }
 const norm = t => t.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
-let showAll = false;
-const PREVIEW = 10;
+const PREVIEW = 10, MORE = 50;
+let shownN = PREVIEW;
+/* Ordonare: după poziția GPS dacă ai apăsat „Lângă mine”, altfel după siturile tale, altfel după zona fusului orar. */
 function renderResults(){
+  const box = $('#results'), hint = $('#allHint');
+  $('#nearMe').textContent = refPoint ? t('Ordonat după poziția ta · anulează') : t('Lângă mine (GPS)');
+  if (!ALL_SITES){
+    box.innerHTML = `<div class="row"><div class="t"><span>${t('Se încarcă lista de decolări…')}</span></div></div>`;
+    loadAllSites().then(renderResults, () => { box.innerHTML = `<div class="row"><div class="t"><span>${t('Lista de decolări nu s-a putut încărca. Verifică internetul.')}</span></div></div>`; });
+    return;
+  }
+  const mode = refPoint ? 'me' : sites.length ? 'sites' : TZ_POINT ? 'tz' : 'none';
+  hint.textContent = {
+    me: t('Ordonate după distanța față de tine. Sursa: ParaglidingEarth. Apasă + ca să adaugi.'),
+    sites: t('Ordonate după distanța față de siturile tale. Sursa: ParaglidingEarth. Apasă + ca să adaugi.'),
+    tz: t('Ordonate aproximativ după zona ta (fusul orar al telefonului). Apasă „Lângă mine” pentru ordonare exactă. Sursa: ParaglidingEarth.'),
+    none: t('Sursa: ParaglidingEarth. Caută după nume sau apasă „Lângă mine”.'),
+  }[mode];
+  const from = mode === 'me' ? [{lat: refPoint.lat, lon: refPoint.lon, n: null}] : mode === 'sites' ? sites : mode === 'tz' ? [{lat: TZ_POINT[0], lon: TZ_POINT[1], n: null}] : [];
   const q = norm($('#q').value.trim()), have = new Set(sites.map(key));
-  // Distanța până la cel mai apropiat sit din lista ta.
-  const near = s => { let best = null; for (const m of sites){ const km = distKm(s.lat, s.lon, m.lat, m.lon); if (!best || km < best.km) best = {km, n: m.n}; } return best; };
-  const all = RO_SITES.map((s, i) => ({s, i, near: near(s)})).filter(x => !have.has(key(x.s)));
-  if (sites.length) all.sort((a, b) => a.near.km - b.near.km); 
-  const matches = q ? all.filter(x => norm(x.s.n).includes(q)) : all;
-  const shown = q || showAll ? matches : matches.slice(0, PREVIEW);
-  const meta = x => [x.s.alt ? x.s.alt + ' m' : '', x.near ? t('{km} km de {n}', {km: Math.round(x.near.km), n: esc(x.near.n)}) : ''].filter(Boolean).join(' · ');
-  let html = shown.map(x => `<div class="row">${roseSvg(x.s.o)}<div class="t"><b>${esc(x.s.n)}</b><span>${meta(x)}</span></div>
+  let list = [];
+  ALL_SITES.forEach((s, i) => { if (!have.has(key(s)) && (!q || norm(s.n).includes(q))) list.push({s, i}); });
+  for (const x of list){ let best = null; for (const m of from){ const km = distKm(x.s.lat, x.s.lon, m.lat, m.lon); if (!best || km < best.km) best = {km, n: m.n}; } x.near = best; }
+  if (from.length) list.sort((a, b) => a.near.km - b.near.km);
+  const meta = x => [x.s.c, x.s.alt ? x.s.alt + ' m' : '',
+    !x.near || mode === 'tz' ? '' : x.near.n ? t('{km} km de {n}', {km: Math.round(x.near.km), n: esc(x.near.n)}) : t('{km} km de tine', {km: Math.round(x.near.km)})].filter(Boolean).join(' · ');
+  let html = list.slice(0, shownN).map(x => `<div class="row">${roseSvg(x.s.o)}<div class="t"><b>${esc(x.s.n)}</b><span>${meta(x)}</span></div>
     <div class="acts"><button class="add" data-add="${x.i}" aria-label="${t('Adaugă {n}', {n: esc(x.s.n)})}">+</button></div></div>`).join('');
-  if (!shown.length) html = `<div class="row"><div class="t"><span>${t('Niciun rezultat. Îl poți adăuga manual mai jos.')}</span></div></div>`;
-  if (!q && matches.length > PREVIEW) html += `<button class="more" id="toggleAll" type="button">${showAll ? t('Arată mai puține') : t('Arată toate cele {n} situri', {n: matches.length})}</button>`;
-  $('#results').innerHTML = html;
+  if (!list.length) html = `<div class="row"><div class="t"><span>${t('Niciun rezultat. Îl poți adăuga manual mai jos.')}</span></div></div>`;
+  if (list.length > shownN) html += `<button class="more" id="showMore" type="button">${t('Arată mai multe ({n} rămase)', {n: list.length - shownN})}</button>`;
+  box.innerHTML = html;
 }
 function renderManualRose(){
   const order = [7,0,1,6,-1,2,5,4,3];
@@ -1138,7 +1178,7 @@ document.addEventListener('click', e => {
   if (btn.matches('.wk')){ dayIdx = +btn.dataset.day; btn.closest('dialog').close(); render(); if (dayIdx === 0) scrollToNow(); else $('#board').scrollLeft = 0; return; }
   if (btn.dataset.mv != null){ const i = +btn.dataset.mv, j = i + +btn.dataset.d; [sites[i], sites[j]] = [sites[j], sites[i]]; saveSites(); renderMyList(); render(); return; }
   if (btn.dataset.del != null){ const [s] = sites.splice(+btn.dataset.del, 1); saveSites(); renderMyList(); renderResults(); render(); toast(t('{n} a fost șters', {n: s.n})); return; }
-  if (btn.dataset.add != null){ const s = structuredClone(RO_SITES[+btn.dataset.add]); sites.push(s); saveSites(); renderMyList(); renderResults(); toast(t('{n} a fost adăugat', {n: s.n})); load(); return; }
+  if (btn.dataset.add != null){ const {c, ...s} = structuredClone(ALL_SITES[+btn.dataset.add]); if (sites.some(x => key(x) === key(s))) return toast(t('{n} e deja în listă', {n: s.n})); sites.push(s); map?.closePopup(); saveSites(); renderMyList(); renderResults(); toast(t('{n} a fost adăugat', {n: s.n})); load(); return; }
   if (btn.dataset.rose != null){ const i = +btn.dataset.rose; manualRose[i] = (manualRose[i] + 1) % 3; renderManualRose(); $(`[data-rose="${i}"]`).focus(); return; }
   if (btn.id === 'resetSettings'){ settings = {...DEFAULT_SETTINGS}; store.set('vld.settings', settings); fillSettings(); render(); toast(t('Praguri implicite')); return; }
   if (btn.id === 'mapOpen') return openMap();
@@ -1150,18 +1190,28 @@ document.addEventListener('click', e => {
       {enableHighAccuracy: true, timeout: 15000});
     return;
   }
-  if (btn.id === 'toggleAll'){ showAll = !showAll; renderResults(); return; }
+  if (btn.id === 'showMore'){ shownN += MORE; renderResults(); return; }
+  if (btn.id === 'nearMe' || btn.id === 'findNear'){
+    if (btn.id === 'findNear') openEdit();
+    if (refPoint && btn.id === 'nearMe'){ refPoint = null; shownN = PREVIEW; return renderResults(); }
+    if (!navigator.geolocation) return toast(t('Telefonul nu oferă localizare în acest browser.'));
+    $('#nearMe').textContent = t('Caut poziția GPS…');
+    navigator.geolocation.getCurrentPosition(p => { refPoint = {lat: p.coords.latitude, lon: p.coords.longitude}; shownN = PREVIEW; renderResults(); $('#allHint').scrollIntoView({block: 'start', behavior: 'smooth'}); },
+      err => { renderResults(); toast(err.code === 1 ? t('Ai refuzat accesul la locație. Îl poți permite din setările browserului.') : t('Nu am putut afla poziția. Încearcă din nou sau pune pinul pe hartă.')); },
+      {enableHighAccuracy: false, timeout: 15000, maximumAge: 600000});
+    return;
+  }
   if (btn.id === 'resetSites'){
     if (btn.dataset.armed){ sites = structuredClone(DEFAULT_SITES); saveSites(); renderMyList(); renderResults(); toast(t('Lista inițială a fost refăcută')); load(); delete btn.dataset.armed; btn.textContent = t('Revino la lista inițială'); }
     else { btn.dataset.armed = 1; btn.textContent = t('Apasă din nou pentru confirmare'); setTimeout(() => { delete btn.dataset.armed; btn.textContent = t('Revino la lista inițială'); }, 4000); }
   }
 });
-$('#q').addEventListener('input', renderResults);
+$('#q').addEventListener('input', () => { shownN = PREVIEW; renderResults(); });
 $('#importFile').addEventListener('change', e => { const f = e.target.files[0]; if (f) importXlsx(f); });
 /* ---------- hartă pentru locații noi ----------
    Leaflet se încarcă doar la nevoie. Pinul completează: coordonatele, altitudinea (model de teren prin Open-Meteo),
    numele (OpenStreetMap / Nominatim) și direcțiile sugerate din pantă (direcția în care coboară terenul). */
-let map = null, pin = null, pinSeq = 0, nameAuto = true;
+let map = null, pin = null, pinSeq = 0, nameAuto = true, pgeLayer = null;
 function loadLeaflet(){
   if (window.L) return Promise.resolve();
   return new Promise((ok, fail) => {
@@ -1180,12 +1230,30 @@ async function openMap(){
     const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom: 19, attribution: t('Imagini © Esri')});
     map = L.map('map', {layers: [topo]});
     L.control.layers({[t('Relief')]: topo, [t('Hartă')]: osm, [t('Satelit')]: sat}, null, {position: 'topright'}).addTo(map);
-    for (const x of RO_SITES) L.circleMarker([x.lat, x.lon], {radius: 4, weight: 1, color: '#5a6a76', fillOpacity: .6}).bindTooltip(x.n).addTo(map);
-    for (const x of sites) L.circleMarker([x.lat, x.lon], {radius: 6, weight: 2, color: '#d4570c', fillOpacity: .9}).bindTooltip(x.n).addTo(map);
-    if (sites.length) map.fitBounds(L.latLngBounds(sites.map(x => [x.lat, x.lon])).pad(.4)); else map.setView([45.9, 24.9], 7);
+    pgeLayer = L.layerGroup().addTo(map);
+    for (const x of sites) L.circleMarker([x.lat, x.lon], {radius: 6, weight: 2, color: '#d4570c', fillOpacity: .9, bubblingMouseEvents: false}).bindTooltip(x.n).addTo(map);
+    const start = refPoint ? [refPoint.lat, refPoint.lon] : TZ_POINT;
+    if (sites.length) map.fitBounds(L.latLngBounds(sites.map(x => [x.lat, x.lon])).pad(.4)); else if (start) map.setView(start, 8); else map.setView([46, 10], 4);
     map.on('click', e => setPin(e.latlng.lat, e.latlng.lng));
+    map.on('moveend', drawPge);
+    loadAllSites().then(drawPge, () => {});
   }
   setTimeout(() => map.invalidateSize(), 50);
+}
+/* Decolările ParaglidingEarth din zona vizibilă (de la zoom 7 în sus, maximum 1500), ca harta să rămână rapidă. */
+function drawPge(){
+  if (!map || !ALL_SITES || !pgeLayer) return;
+  pgeLayer.clearLayers();
+  if (map.getZoom() < 7){ if (!pin) mapInfo(t('Mărește harta ca să vezi decolările de pe ParaglidingEarth.')); return; }
+  if (!pin && $('#mapInfo').textContent === t('Mărește harta ca să vezi decolările de pe ParaglidingEarth.')) mapInfo('');
+  const b = map.getBounds(), have = new Set(sites.map(key)); let n = 0;
+  for (let i = 0; i < ALL_SITES.length && n < 1500; i++){
+    const x = ALL_SITES[i]; if (!b.contains([x.lat, x.lon]) || have.has(key(x))) continue; n++;
+    L.circleMarker([x.lat, x.lon], {radius: 5, weight: 1, color: '#5a6a76', fillOpacity: .6, bubblingMouseEvents: false})
+      .bindTooltip(x.n)
+      .bindPopup(`<b>${esc(x.n)}</b><br>${[x.c, x.alt ? x.alt + ' m' : ''].filter(Boolean).join(' · ')}<br><button class="btn small" type="button" data-add="${i}" style="margin-top:6px">${t('Adaugă în listă')}</button>`)
+      .addTo(pgeLayer);
+  }
 }
 function mapInfo(html){ const el = $('#mapInfo'); el.innerHTML = html; el.hidden = !html; }
 const PIN_ICON = () => L.divIcon({className: 'pin', html: '<svg width="30" height="40" viewBox="0 0 30 40"><path d="M15 39C15 39 2 23 2 14a13 13 0 0 1 26 0c0 9-13 25-13 25z" fill="currentColor" stroke="#fff" stroke-width="2"/><circle cx="15" cy="14" r="5" fill="#fff"/></svg>', iconSize: [30, 40], iconAnchor: [15, 39]});
@@ -1229,7 +1297,7 @@ async function setPin(lat, lon){
   } else parts.push(t('nu am găsit altitudinea, complet-o de mână'));
   if (nm.status === 'fulfilled' && nm.value && (nameAuto || !$('#mName').value.trim())){ $('#mName').value = nm.value; nameAuto = true; parts.push(t('nume: {n}', {n: esc(nm.value)})); }
   let html = parts.join(' · ') + '.';
-  const near = RO_SITES.map((x, i) => ({x, i, km: distKm(lat, lon, x.lat, x.lon)})).filter(o => o.km < 1).sort((a, b) => a.km - b.km)[0];
+  const near = (ALL_SITES || []).map((x, i) => ({x, i, km: distKm(lat, lon, x.lat, x.lon)})).filter(o => o.km < 1).sort((a, b) => a.km - b.km)[0];
   if (near && !sites.some(s => key(s) === key(near.x)))
     html += '<br>' + t('Aproape ({m} m) există deja „{n}” pe ParaglidingEarth, cu direcțiile stabilite de piloți.', {m: Math.round(near.km * 1000), n: esc(near.x.n)}) + ` <button class="btn small" type="button" data-add="${near.i}">${t('Adaugă „{n}”', {n: esc(near.x.n)})}</button>`;
   mapInfo(html);
@@ -1286,6 +1354,7 @@ setInterval(() => { if (!loading && fc) $('#status').textContent = t('Actualizat
 })();
 translateStatic();
 render(); scrollToNow();
+fetch('holfuy.json').then(r => r.json()).then(d => { HOLFUY = d; render(); if ($('#dlgEdit').open) renderMyList(); }).catch(() => {});
 if (GOOGLE_CLIENT_ID && gAcct && tokenValid()) syncNow();
 load().then(scrollToNow);
 </script>

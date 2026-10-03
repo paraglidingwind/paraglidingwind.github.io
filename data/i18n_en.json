@@ -253,5 +253,22 @@
   "Caut poziția GPS…": "Getting your GPS position…",
   "Ai refuzat accesul la locație. Îl poți permite din setările browserului.": "Location access was denied. You can allow it in the browser settings.",
   "Nu am putut afla poziția. Încearcă din nou sau pune pinul pe hartă.": "Couldn't get your position. Try again or drop the pin on the map.",
-  "Am adus datele de pe adresa veche.": "Your data was brought over from the old address."
+  "Am adus datele de pe adresa veche.": "Your data was brought over from the old address.",
+  "Termeni": "Terms",
+  "Toate decolările": "All takeoffs",
+  "Caută o decolare (ex: Bunloc)": "Search a takeoff (e.g. Bunloc)",
+  "Lângă mine (GPS)": "Near me (GPS)",
+  "Ordonat după poziția ta · anulează": "Sorted by your position · cancel",
+  "Se încarcă lista de decolări…": "Loading the takeoff list…",
+  "Lista de decolări nu s-a putut încărca. Verifică internetul.": "The takeoff list couldn't load. Check your connection.",
+  "{km} km de tine": "{km} km from you",
+  "Arată mai multe ({n} rămase)": "Show more ({n} left)",
+  "Adaugă în listă": "Add to my list",
+  "Ordonate după distanța față de tine. Sursa: ParaglidingEarth. Apasă + ca să adaugi.": "Sorted by distance from you. Source: ParaglidingEarth. Tap + to add.",
+  "Ordonate după distanța față de siturile tale. Sursa: ParaglidingEarth. Apasă + ca să adaugi.": "Sorted by distance from your sites. Source: ParaglidingEarth. Tap + to add.",
+  "Ordonate aproximativ după zona ta (fusul orar al telefonului). Apasă „Lângă mine” pentru ordonare exactă. Sursa: ParaglidingEarth.": "Roughly sorted by your region (your phone's time zone). Tap “Near me” for exact sorting. Source: ParaglidingEarth.",
+  "Sursa: ParaglidingEarth. Caută după nume sau apasă „Lângă mine”.": "Source: ParaglidingEarth. Search by name or tap “Near me”.",
+  "Găsește decolări lângă mine": "Find takeoffs near me",
+  "{n} e deja în listă": "{n} is already in your list",
+  "Mărește harta ca să vezi decolările de pe ParaglidingEarth.": "Zoom in to see the takeoffs from ParaglidingEarth."
 }
