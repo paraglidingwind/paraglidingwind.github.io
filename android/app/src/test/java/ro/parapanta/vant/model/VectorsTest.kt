@@ -96,4 +96,16 @@ class VectorsTest {
             assertEquals(c.toString(), c.s("err"), validateThresholds(thresholds(c["s"]!!.jsonObject)))
         }
     }
+
+    /** Profilurile Kotlin = PROFILES din core.js (citite din sursa web), toate valide. */
+    @Test fun profiles() {
+        val js = File("../../src/core.js").readText()
+        for ((key, name) in listOf("elev" to "Elev / începător", "pilot" to "Pilot", "avansat" to "Avansat")) {
+            val m = Regex("""$key:\s*\{good:(\S+?), marg:(\S+?), calm:(\S+?), gust:(\S+?),\s*spread:(\S+?), rain:(\S+?)\}""").find(js)!!
+            val (g, mg, c, gu, sp, r) = m.destructured
+            assertEquals(name, Thresholds(good = g.toDouble(), marg = mg.toDouble(), calm = c.toDouble(), gust = gu.toDouble(), spread = sp.toDouble(), rain = r.toDouble()), PROFILES[name])
+            assertEquals(name, null, validateThresholds(PROFILES[name]!!))
+        }
+        assertEquals("Pilot", profileOf(Thresholds()))
+    }
 }

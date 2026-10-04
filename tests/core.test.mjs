@@ -2,7 +2,7 @@
 // Cazurile din data/test_vectors/ sunt aceleași pe care le citește și VectorsTest.kt (Android).
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {core, json} from './load-core.mjs';
+import {core, json, read} from './load-core.mjs';
 
 test('rate(): cazurile comune', () => {
   const v = json('data/test_vectors/rate.json');
@@ -74,4 +74,23 @@ test('fetchRetry(): reîncearcă după 5xx și după erori de rețea, apoi renun
   assert.equal((await core.fetchRetry('u', [1, 1], f.get)).status, 404); assert.equal(f.calls.length, 1, 'un 4xx nu se reîncearcă');
   f = seq(new TypeError('a'), new TypeError('b'), new TypeError('c'));
   await assert.rejects(core.fetchRetry('u', [1, 1], f.get));
+});
+
+test('profilurile de limite sunt valide și în ordine', () => {
+  for (const [k, p] of Object.entries(core.PROFILES)) assert.equal(core.validateSettings(p), null, k);
+  assert.ok(core.PROFILES.elev.marg <= core.PROFILES.pilot.marg && core.PROFILES.pilot.marg <= core.PROFILES.avansat.marg);
+  assert.deepEqual(core.PROFILES.pilot, {good: 5, marg: 7, calm: 1, gust: 9, spread: 4, rain: 0.2}, 'Pilot = pragurile implicite de până acum');
+});
+
+test('zone: țările din jurul unui punct și țara probabilă (docs/sites/index.json)', () => {
+  const index = JSON.parse(read('docs/sites/index.json'));
+  assert.equal(index.RO.n, 182);
+  const near = core.countriesNear(index, 46.77, 23.59, 100);           // Cluj, 100 km
+  assert.ok(near.includes('RO') && near.length < 8, near.join(','));
+  assert.ok(!core.countriesNear(index, 46.77, 23.59, 100).includes('FR'));
+  assert.equal(core.guessCountry(index, 'en-US', [45.9, 24.9]), 'RO', 'fusul orar contează mai mult decât limba');
+  assert.equal(core.guessCountry(index, 'de-AT', null), 'AT');
+  assert.equal(core.guessCountry(index, 'en', null), null);
+  assert.equal(core.bboxKm(45, 25, [44, 24, 46, 26]), 0);
+  assert.ok(core.countriesNear(index, 45.9, 6.1, 50).includes('FR'), 'Annecy');
 });
