@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
 """Generează docs/index.html (GitHub Pages) din src/index.html + data/*.json."""
-import datetime, json, pathlib, subprocess
+import hashlib, json, pathlib
 root = pathlib.Path(__file__).parent
 init = (root / "data/initial_sites.json").read_text()
 icons = json.loads((root / "data/sky_icons.json").read_text())
-# Versiunea afișată în pagină: data build-ului + commitul de pornire (cu „+” dacă sursa avea modificări necomise).
-try:
-    rev = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=root, capture_output=True, text=True).stdout.strip()
-    dirty = subprocess.run(["git", "status", "--porcelain", "src", "data", "build.py"], cwd=root, capture_output=True, text=True).stdout.strip()
-    rev += "+" if dirty else ""
-except OSError:
-    rev = ""
-version = datetime.date.today().strftime("%Y.%m.%d") + (f" · {rev}" if rev else "")
+# Versiunea afișată în pagină: amprenta conținutului surselor. Același cod dă aceeași versiune, deci un build repetat
+# nu schimbă docs/; orice schimbare în sursă dă alta. (Varianta cu data + commitul murdărea docs/ după fiecare commit.)
+sources = ["src/index.html", "src/core.js", "data/i18n_en.json", "data/sky_icons.json", "data/google.json", "data/initial_sites.json"]
+version = hashlib.sha1(b"".join((root / f).read_bytes() for f in sources)).hexdigest()[:7]
 html = (root / "src/index.html").read_text().replace("__CORE_JS__", (root / "src/core.js").read_text().rstrip()) \
     .replace("__DEFAULT_SITES__", init) \
     .replace("__SKY_ICONS__", json.dumps(icons, separators=(",", ":"))) \
