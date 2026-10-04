@@ -16,7 +16,7 @@ test('rate(): cazurile comune', () => {
 test('summarize(): cazurile comune', () => {
   const v = json('data/test_vectors/summary.json');
   for (const c of v.cases){
-    const r = core.summarize({o: v.sites[c.site]}, c.hours, c.w, {...v.settings, ...(c.settings || {})});
+    const r = core.summarize({o: v.sites[c.site]}, c.hours, c.w, {...v.settings, ...(c.settings || {})}, c.extra || []);
     if (c.sts) assert.deepEqual(r.sts, c.sts, c.name);
     assert.equal(r.st, c.st, c.name);
     assert.equal(r.text, c.text, c.name);

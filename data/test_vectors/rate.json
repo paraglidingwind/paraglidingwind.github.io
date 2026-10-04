@@ -1,5 +1,5 @@
 {
- "_": "Cazuri comune pentru rate(): le citesc tests/core.test.mjs și VectorsTest.kt. Se compară starea.",
+ "_": "Cazuri comune pentru rate(): le citesc tests/core.test.mjs și VectorsTest.kt. Se compară starea și avertizările (warn). next = următoarele 2 ore (pentru furtuni).",
  "settings": {
   "good": 5,
   "marg": 7,
@@ -20,6 +20,16 @@
    0,
    0,
    0
+  ],
+  "fara_directii": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
   ]
  },
  "cases": [
@@ -32,7 +42,8 @@
     "wg": 4,
     "pr": 0.0
    },
-   "st": "go"
+   "st": "go",
+   "warn": []
   },
   {
    "name": "vest = nu",
@@ -43,7 +54,8 @@
     "wg": 4,
     "pr": 0.0
    },
-   "st": "no"
+   "st": "no",
+   "warn": []
   },
   {
    "name": "sud = marginal",
@@ -54,7 +66,8 @@
     "wg": 4,
     "pr": 0.0
    },
-   "st": "maybe"
+   "st": "maybe",
+   "warn": []
   },
   {
    "name": "est prea tare = nu",
@@ -87,7 +100,8 @@
     "wg": 1.5,
     "pr": 0.0
    },
-   "st": "calm"
+   "st": "calm",
+   "warn": []
   },
   {
    "name": "rafale peste prag = nu",
@@ -120,7 +134,8 @@
     "wg": 4,
     "pr": 1.0
    },
-   "st": "no"
+   "st": "no",
+   "warn": []
   },
   {
    "name": "fără date",
@@ -149,6 +164,289 @@
     "pr": 0.0
    },
    "st": "go"
+  },
+  {
+   "name": "SIG-06: noaptea nu primește verdict",
+   "site": "liteni",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0.0,
+    "day": 0
+   },
+   "st": "night"
+  },
+  {
+   "name": "SIG-01: vânt la 1500 m peste 8 = marginal",
+   "site": "liteni",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0.0,
+    "w8": 9,
+    "d8": 90
+   },
+   "st": "maybe",
+   "warn": [
+    "alt"
+   ]
+  },
+  {
+   "name": "SIG-01: vânt la 1500 m peste 12 = nu",
+   "site": "liteni",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0.0,
+    "w8": 13,
+    "d8": 90
+   },
+   "st": "no",
+   "warn": [
+    "alt"
+   ]
+  },
+  {
+   "name": "SIG-01: exact 8 m/s la 1500 m nu avertizează",
+   "site": "liteni",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0.0,
+    "w8": 8,
+    "d8": 90
+   },
+   "st": "go",
+   "warn": []
+  },
+  {
+   "name": "SIG-01: din spatele decolării peste 5 = marginal",
+   "site": "liteni",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0.0,
+    "w8": 6,
+    "d8": 315
+   },
+   "st": "maybe",
+   "warn": [
+    "alt"
+   ]
+  },
+  {
+   "name": "SIG-01: din spate, dar sub 5 m/s = bun",
+   "site": "liteni",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0.0,
+    "w8": 4.9,
+    "d8": 315
+   },
+   "st": "go",
+   "warn": []
+  },
+  {
+   "name": "SIG-01: din sectorul marginal al decolării nu e „din spate”",
+   "site": "liteni",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0.0,
+    "w8": 6,
+    "d8": 180
+   },
+   "st": "go",
+   "warn": []
+  },
+  {
+   "name": "SIG-01: calm la decolare + vânt din spate sus = marginal (sub vânt)",
+   "site": "liteni",
+   "w": {
+    "ws": 0.5,
+    "wd": 270,
+    "wg": 1.5,
+    "pr": 0.0,
+    "w8": 7,
+    "d8": 270
+   },
+   "st": "maybe",
+   "warn": [
+    "alt"
+   ]
+  },
+  {
+   "name": "SIG-02: CAPE mare și LI negativ = marginal",
+   "site": "liteni",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0.0,
+    "cape": 1200,
+    "li": -3
+   },
+   "st": "maybe",
+   "warn": [
+    "storm"
+   ]
+  },
+  {
+   "name": "SIG-02: CAPE mare, dar LI peste −2 = bun",
+   "site": "liteni",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0.0,
+    "cape": 1200,
+    "li": -1
+   },
+   "st": "go",
+   "warn": []
+  },
+  {
+   "name": "SIG-02: LI foarte negativ, dar CAPE mic = bun",
+   "site": "liteni",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0.0,
+    "cape": 700,
+    "li": -5
+   },
+   "st": "go",
+   "warn": []
+  },
+  {
+   "name": "SIG-02: furtună la ora asta = nu",
+   "site": "liteni",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0.0,
+    "code": 95
+   },
+   "st": "no",
+   "warn": [
+    "storm"
+   ]
+  },
+  {
+   "name": "SIG-02: furtună în ora următoare = nu",
+   "site": "liteni",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0.0,
+    "code": 2
+   },
+   "next": [
+    {
+     "ws": 3,
+     "wd": 90,
+     "code": 95
+    },
+    null
+   ],
+   "st": "no",
+   "warn": [
+    "storm"
+   ]
+  },
+  {
+   "name": "SIG-02: furtună peste 2 ore = nu",
+   "site": "liteni",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0.0,
+    "code": 2
+   },
+   "next": [
+    {
+     "ws": 3,
+     "wd": 90,
+     "code": 3
+    },
+    {
+     "ws": 3,
+     "wd": 90,
+     "code": 96
+    }
+   ],
+   "st": "no",
+   "warn": [
+    "storm"
+   ]
+  },
+  {
+   "name": "ONB-07: fără direcții, vânt moderat = marginal, nu „nu”",
+   "site": "fara_directii",
+   "w": {
+    "ws": 3,
+    "wd": 270,
+    "wg": 4,
+    "pr": 0.0
+   },
+   "st": "maybe",
+   "warn": [
+    "nodir"
+   ]
+  },
+  {
+   "name": "ONB-07: fără direcții, calm = calm",
+   "site": "fara_directii",
+   "w": {
+    "ws": 0.5,
+    "wd": 270,
+    "wg": 1.5,
+    "pr": 0.0
+   },
+   "st": "calm",
+   "warn": []
+  },
+  {
+   "name": "ONB-07: fără direcții, vânt prea tare = nu",
+   "site": "fara_directii",
+   "w": {
+    "ws": 8,
+    "wd": 270,
+    "wg": 9,
+    "pr": 0.0
+   },
+   "st": "no",
+   "warn": [
+    "nodir"
+   ]
+  },
+  {
+   "name": "ONB-07: fără direcții, vântul din spate sus nu se poate judeca",
+   "site": "fara_directii",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0.0,
+    "w8": 6,
+    "d8": 315
+   },
+   "st": "maybe",
+   "warn": [
+    "nodir"
+   ]
   }
  ]
 }

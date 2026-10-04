@@ -19,6 +19,8 @@ import ro.parapanta.vant.model.mergeFlights
 import ro.parapanta.vant.model.mergeSites
 import ro.parapanta.vant.model.readXlsx
 import ro.parapanta.vant.model.Hour
+import ro.parapanta.vant.model.Rating
+import ro.parapanta.vant.model.summarize
 import ro.parapanta.vant.model.Site
 import ro.parapanta.vant.model.Status
 import ro.parapanta.vant.model.Thresholds
@@ -51,7 +53,16 @@ data class UiState(
     val hours: List<String> by lazy { (th.from..th.to).map { it.toString().padStart(2, '0') } }
 
     fun hour(site: Site, date: String, h: String): Hour? = fc?.bySite?.get(site.key)?.at("${date}T$h:00")
-    fun bestOfDay(site: Site, date: String): Status = bestOf(hours.map { rate(site, hour(site, date, it), th).status })
+    private fun plus(h: String, k: Int) = (h.toInt() + k).toString().padStart(2, '0')
+    /** Ora [h] din ziua [date], evaluată împreună cu următoarele 2 ore (o furtună care vine schimbă verdictul de acum). */
+    fun rateAt(site: Site, date: String, h: String): Rating =
+        rate(site, hour(site, date, h), th, listOf(hour(site, date, plus(h, 1)), hour(site, date, plus(h, 2))))
+    /** Rezumatul zilei; cele 2 ore de după interval contează pentru furtuni. */
+    fun summary(site: Site, date: String) = summarize(site, hours, hours.map { hour(site, date, it) }, th,
+        listOf(hour(site, date, plus(hours.last(), 1)), hour(site, date, plus(hours.last(), 2))))
+    /** Starea zilei pentru punctul din banda de zile: aceeași ca rezumatul (fereastra minimă, fără noapte). */
+    fun bestOfDay(site: Site, date: String): Status = summary(site, date).status
+    fun sun(site: Site, date: String): Pair<String, String>? = fc?.bySite?.get(site.key)?.sun(date)
 }
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {

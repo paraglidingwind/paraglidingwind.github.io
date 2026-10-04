@@ -19,6 +19,7 @@
   --accent:#d4570c; --accent-ink:#ffffff;
   --sun:#d99a06; --water:#2a76cf; --sky:#4f5f6b;
   --go:#17804a; --go-bg:#d9f0e2; --maybe:#9a6a0e; --maybe-bg:#f8ecc9; --no:#b8322b; --no-bg:#f7dcd9; --calm:#5f6f7b; --calm-bg:#e6ecf0;
+  --night:#7d8b95; --night-bg:#dfe5ea;
   --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
   --f-ui:"Barlow Semi Condensed","Roboto Condensed",system-ui,sans-serif;
   --cell-w:52px; --name-w:118px;
@@ -29,12 +30,14 @@
   --accent:#ff8a3d; --accent-ink:#1a0d04;
   --sun:#f2c14e; --water:#6aa8f0; --sky:#b4c2cc;
   --go:#5fd394; --go-bg:#153526; --maybe:#e8b852; --maybe-bg:#3a2f12; --no:#f2776d; --no-bg:#3f1c1a; --calm:#93a3ae; --calm-bg:#1e2b35;
+  --night:#5d6d78; --night-bg:#0a1116;
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0d151b; --surface:#152029; --sunk:#1b2832; --ink:#e4ebf0; --muted:#93a3ae; --line:#26343e;
   --accent:#ff8a3d; --accent-ink:#1a0d04;
   --sun:#f2c14e; --water:#6aa8f0; --sky:#b4c2cc;
   --go:#5fd394; --go-bg:#153526; --maybe:#e8b852; --maybe-bg:#3a2f12; --no:#f2776d; --no-bg:#3f1c1a; --calm:#93a3ae; --calm-bg:#1e2b35;
+  --night:#5d6d78; --night-bg:#0a1116;
   color-scheme:dark}
 
 *{box-sizing:border-box}
@@ -70,7 +73,7 @@ button{cursor:pointer}
 .day .dots i{width:7px;height:7px;border-radius:50%;background:var(--line)}
 .day[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .day[aria-pressed="true"] b{color:var(--accent)}
-i.go{background:var(--go)!important} i.maybe{background:var(--maybe)!important} i.no{background:var(--no)!important} i.calm{background:var(--calm)!important}
+i.go{background:var(--go)!important} i.maybe{background:var(--maybe)!important} i.no{background:var(--no)!important} i.calm{background:var(--calm)!important} i.night{background:var(--night-bg)!important}
 
 /* Tabla */
 .board{flex:0 1 auto;min-height:0;overflow:auto;margin:0 0 0 16px;border-top:1px solid var(--line);border-left:1px solid var(--line);border-top-left-radius:12px;background:var(--surface);overscroll-behavior:contain}
@@ -107,6 +110,10 @@ table.grid{border-collapse:separate;border-spacing:0;font-variant-numeric:tabula
 .cell.no{background:var(--no-bg);color:var(--no)}
 .cell.calm{background:var(--calm-bg);color:var(--calm)}
 .cell.na{background:none;color:var(--muted)}
+.cell.night{background:var(--night-bg);color:var(--night)}
+.cell.night .sky .ink{stroke:var(--night)}
+.disclaimer{display:block;margin:10px 0 0;padding:8px 10px;border-radius:10px;background:var(--sunk);color:var(--muted);font-size:12.5px}
+.legend .disclaimer{flex-basis:100%;margin:2px 0 0}
 .cell .rain{font-size:10px;line-height:1}
 .empty{padding:28px 16px;color:var(--muted);max-width:40ch}
 .empty button{margin-top:10px}
@@ -129,9 +136,11 @@ dialog::backdrop{background:rgb(5 10 14 / .5)}
 
 .verdict{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;font-weight:600}
 .verdict.go{background:var(--go-bg);color:var(--go)} .verdict.maybe{background:var(--maybe-bg);color:var(--maybe)}
-.verdict.no{background:var(--no-bg);color:var(--no)} .verdict.calm{background:var(--calm-bg);color:var(--calm)}
+.verdict.no{background:var(--no-bg);color:var(--no)} .verdict.calm{background:var(--calm-bg);color:var(--calm)} .verdict.night{background:var(--night-bg);color:var(--night)}
 .reasons{margin:8px 0 0;padding-left:18px;color:var(--ink)}
 .reasons li{margin:2px 0}
+.reasons li.w{list-style:none;margin-left:-18px;padding-left:18px;position:relative}
+.reasons li.w::before{content:"";position:absolute;left:1px;top:5px;border-top:10px solid var(--maybe);border-right:10px solid transparent}
 .week{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .wk,.wk-scale{display:grid;grid-template-columns:62px 1fr;gap:10px;align-items:start;padding:10px 12px}
 .wk-scale{padding-bottom:0}
@@ -221,11 +230,13 @@ input.in,textarea.in,select.in{width:100%;min-height:44px;padding:9px 12px;borde
   <div class="days" id="days" role="toolbar" aria-label="Alege ziua"></div>
   <div class="board" id="board"></div>
   <div class="legend">
-    <span class="k"><i class="go"></i>Bun</span>
+    <span class="k"><i class="go"></i>Favorabil</span>
     <span class="k"><i class="maybe"></i>Marginal</span>
     <span class="k"><i class="no"></i>Nu</span>
     <span class="k"><i class="calm"></i>Calm</span>
     <span>Pictograma: cerul și tipul de nori · săgeata: încotro bate vântul · cifra mare: vânt la 10 m, mică: rafale (m/s)</span>
+    <span class="k"><i class="night"></i>Noapte</span>
+    <span class="disclaimer">Prognoză de model, nu o garanție. Decizia îți aparține, la decolare.</span>
     <a href="confidentialitate.html" style="color:var(--muted)">Confidențialitate</a>
     <a href="termeni.html" style="color:var(--muted)">Termeni</a>
     <a id="langSw" href="?lang=en" style="color:var(--accent);font-weight:600">English</a>
@@ -362,9 +373,9 @@ const GOOGLE_CLIENT_ID = __GOOGLE_CLIENT_ID__;
 const HOLFUY_MAX_KM = 5;
 const DIRS = LANG === 'en' ? ['N','NE','E','SE','S','SW','W','NW'] : ['N','NE','E','SE','S','SV','V','NV'];
 const DEFAULT_SETTINGS = {good:5, marg:7, calm:1, gust:9, spread:4, rain:0.2, from:8, to:20};
-const HOURLY = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,cloud_cover,cape,temperature_2m,wind_speed_850hPa,wind_direction_850hPa,weather_code,cloud_cover_low,cloud_cover_mid,cloud_cover_high,is_day';
+const HOURLY = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,cloud_cover,cape,temperature_2m,wind_speed_850hPa,wind_direction_850hPa,weather_code,cloud_cover_low,cloud_cover_mid,cloud_cover_high,is_day,lifted_index';
 const STALE_MS = 30*60*1000;
-const STATUS_TXT = {go: t('Bun de zbor'), maybe: t('Marginal'), no: t('Nu e de zbor'), calm: t('Calm (fără vânt)'), na: t('Fără date')};
+const STATUS_TXT = {go: t('Favorabil'), maybe: t('Marginal'), no: t('Nu e de zbor'), calm: t('Calm (fără vânt)'), night: t('Noapte'), na: t('Fără date')};
 /* Logica pură (reguli, cer, rezumat, coordonate, jurnal): src/core.js, inserată de build.py. */
 __CORE_JS__
 
@@ -400,7 +411,8 @@ function loadAllSites(){
   return allSitesP;
 }
 let settings = {...DEFAULT_SETTINGS, ...store.get('vld.settings', {})};
-let fc = store.get('vld.fc2', null);   // {at, bySite:{key:{...}}}
+let fc = store.get('vld.fc3', null);   // {at, bySite:{key:{...}}}; vld.fc2 (fără li, răsărit, apus) nu se mai citește
+try{ localStorage.removeItem('vld.fc2') }catch{}
 let dayIdx = 0;
 let loading = false, lastError = null;
 
@@ -432,7 +444,7 @@ async function load(force){
       latitude: sites.map(s => s.lat).join(','),
       longitude: sites.map(s => s.lon).join(','),
       elevation: sites.map(s => s.alt ?? 'nan').join(','),
-      hourly: HOURLY, wind_speed_unit:'ms', timezone: TZ || 'auto', forecast_days:'7'
+      hourly: HOURLY, daily: 'sunrise,sunset', wind_speed_unit:'ms', timezone: TZ || 'auto', forecast_days:'7'
     });
     const r = await fetch('https://api.open-meteo.com/v1/forecast?' + p);
     if (!r.ok) throw new Error(t('Serverul de prognoză a răspuns {s}', {s: r.status}));
@@ -442,10 +454,11 @@ async function load(force){
       const h = d.hourly;
       bySite[key(sites[i])] = {t:h.time, ws:h.wind_speed_10m, wd:h.wind_direction_10m, wg:h.wind_gusts_10m, pr:h.precipitation,
         cc:h.cloud_cover, cape:h.cape, tt:h.temperature_2m, w8:h.wind_speed_850hPa, d8:h.wind_direction_850hPa,
-        code:h.weather_code, lo:h.cloud_cover_low, mi:h.cloud_cover_mid, hi:h.cloud_cover_high, day:h.is_day};
+        code:h.weather_code, lo:h.cloud_cover_low, mi:h.cloud_cover_mid, hi:h.cloud_cover_high, day:h.is_day, li:h.lifted_index,
+        sr:d.daily?.sunrise, ss:d.daily?.sunset};
     });
     fc = {at: Date.now(), bySite};
-    store.set('vld.fc2', fc);
+    store.set('vld.fc3', fc);
   }catch(e){
     lastError = navigator.onLine === false ? t('Ești offline.') : (e.message || t('Eroare de rețea.'));
   }finally{ loading = false; render(); }
@@ -455,7 +468,18 @@ function hourData(site, t){
   const f = fc && fc.bySite[key(site)]; if (!f) return null;
   const i = f.t.indexOf(t); if (i < 0) return null;
   return {ws:f.ws[i], wd:f.wd[i], wg:f.wg[i], pr:f.pr[i], cc:f.cc[i], cape:f.cape[i], tt:f.tt[i], w8:f.w8[i], d8:f.d8[i],
-    code:f.code?.[i], lo:f.lo?.[i], mi:f.mi?.[i], hi:f.hi?.[i], day:f.day?.[i]};
+    code:f.code?.[i], lo:f.lo?.[i], mi:f.mi?.[i], hi:f.hi?.[i], day:f.day?.[i], li:f.li?.[i]};
+}
+const hPlus = (h, k) => String(+h + k).padStart(2, '0');
+/* Ora h din ziua d, evaluată cu următoarele 2 ore (o furtună care vine schimbă verdictul de acum). */
+function rateAt(site, d, h){
+  const w = hourData(site, `${d}T${h}:00`);
+  return {w, r: rate(site, w, settings, {next: [1, 2].map(k => hourData(site, `${d}T${hPlus(h, k)}:00`))})};
+}
+/* Răsăritul și apusul din ziua d, ca „07:35”. */
+function sunOf(site, d){
+  const f = fc && fc.bySite[key(site)], i = f?.sr ? f.sr.findIndex(x => x.startsWith(d)) : -1;
+  return i >= 0 && f.ss?.[i] ? {rise: f.sr[i].slice(11, 16), set: f.ss[i].slice(11, 16)} : null;
 }
 function dates(){
   const f = fc && Object.values(fc.bySite)[0]; if (!f) return [];
@@ -483,15 +507,8 @@ const dayName = (d, i) => {
   const w = new Date(d+'T12:00').toLocaleDateString(LOC, {weekday:'short'}).replace('.','');
   return w.charAt(0).toUpperCase() + w.slice(1);
 };
-function bestOfDay(site, d){
-  let best = 'na';
-  for (const h of hours()){
-    const st = rate(site, hourData(site, `${d}T${h}:00`), settings).st;
-    if (st === 'na') continue;
-    if (best === 'na' || RANK[st] < RANK[best]) best = st;
-  }
-  return best;
-}
+/* Starea zilei pentru punctul din banda de zile: aceeași ca rezumatul (fereastra minimă, fără noapte). */
+function bestOfDay(site, d){ return daySummary(site, d).st; }
 
 function render(){
   const ds = dates();
@@ -530,7 +547,7 @@ function render(){
   sites.forEach((s, si) => {
     html += `<tr><th><button class="site" data-site="${si}">${roseSvg(s.o)}<span><b>${esc(s.n)}</b><span>${s.alt ? s.alt + ' m' : ''}${stationOf(s) ? '<em class="live">LIVE</em>' : ''}</span></span></button></th>`;
     for (const h of hs){
-      const w = hourData(s, `${d}T${h}:00`), r = rate(s, w, settings);
+      const {w, r} = rateAt(s, d, h);
       if (r.st === 'na'){ html += `<td><div class="cell na">–</div></td>`; continue; }
       const rain = w.pr > settings.rain ? `<span class="rain">${w.pr.toFixed(1)}mm</span>` : `<small>${Math.round(w.wg)}</small>`;
       html += `<td><button class="cell ${r.st}" data-site="${si}" data-h="${h}" aria-label="${t('{n} ora {h}: {st}, {d} {v} metri pe secundă, {sky}', {n: esc(s.n), h, st: STATUS_TXT[r.st], d: DIRS[sectorOf(w.wd)], v: w.ws.toFixed(1), sky: sky(w).label})}">`
@@ -553,12 +570,12 @@ function scrollToNow(){
 
 /* ---------- detalii ---------- */
 function openCell(si, h){
-  const s = sites[si], d = dates()[dayIdx], w = hourData(s, `${d}T${h}:00`), r = rate(s, w, settings), k = sky(w);
+  const s = sites[si], d = dates()[dayIdx], {w, r} = rateAt(s, d, h), k = sky(w), sun = sunOf(s, d);
   $('#cellTitle').textContent = `${s.n} · ${h}:00`;
   const dir = deg => `${DIRS[sectorOf(deg)]} (${Math.round(deg)}°)`;
   $('#cellBody').innerHTML = `
     <div class="verdict ${r.st}"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" style="transform:rotate(${(w.wd+180)%360}deg)">${ARROW}</svg>${STATUS_TXT[r.st]}</div>
-    <ul class="reasons">${r.why.map(([, m]) => `<li>${esc(m)}</li>`).join('')}</ul>
+    <ul class="reasons">${r.why.map(([, m, kind]) => `<li${kind ? ' class="w"' : ''}>${esc(m)}</li>`).join('')}</ul>
     <h3>${t('Cer')}</h3>
     <div class="skyrow">${skySvg(k.icon)}<div><b>${esc(k.label)}</b>${k.type ? `<br><span style="color:var(--muted)">${esc(k.type)}</span>` : ''}</div></div>
     ${k.type && CLOUD_NOTES[k.type] ? `<p class="note">${t(CLOUD_NOTES[k.type])}</p>` : ''}
@@ -568,15 +585,26 @@ function openCell(si, h){
       <dt>${t('Vânt la ~1500 m')}</dt><dd>${w.w8 != null ? t('{v} m/s din {d}', {v: w.w8.toFixed(1), d: dir(w.d8)}) : '–'}</dd>
       <dt>${t('Nori')}</dt><dd>${w.cc != null ? w.cc + ' %' : '–'}${w.lo != null ? ` <span style="color:var(--muted);font-weight:500">${t('(jos {lo} · mediu {mi} · sus {hi})', {lo: w.lo, mi: w.mi, hi: w.hi})}</span>` : ''}</dd>
       <dt>${t('Ploaie')}</dt><dd>${w.pr != null ? w.pr.toFixed(1) + ' mm/h' : '–'}</dd>
-      <dt>CAPE</dt><dd>${w.cape != null ? Math.round(w.cape) + ' J/kg' + (w.cape > 800 ? t(' · risc de dezvoltări') : '') : '–'}</dd>
+      <dt>${t('Instabilitate')}</dt><dd>${w.cape != null ? 'CAPE ' + Math.round(w.cape) + ' J/kg' : '–'}${w.li != null ? ' · LI ' + String(Math.round(w.li * 10) / 10).replace('-', '−') : ''}</dd>
       <dt>${t('Temperatură')}</dt><dd>${w.tt != null ? w.tt.toFixed(1) + ' °C' : '–'}</dd>
-      <dt>${t('Decolare')}</dt><dd>${s.o.map((v, i) => v === 2 ? DIRS[i] : v === 1 ? DIRS[i].toLowerCase() : '').filter(Boolean).join(' ') || '–'}${s.alt ? ' · ' + s.alt + ' m' : ''}</dd>
+      ${sun ? `<dt>${t('Soare')}</dt><dd>${t('răsărit {r} · apus {s}', {r: sun.rise, s: sun.set})}</dd>` : ''}
+      <dt>${t('Decolare')}</dt><dd>${dirsTxt(s)}${s.alt ? ' · ' + s.alt + ' m' : ''}</dd>
     </dl>
+    <p class="disclaimer">${t('Prognoză de model, nu o garanție. Decizia îți aparține, la decolare.')}</p>
     ${siteLinks(s)}`;
   $('#dlgCell').showModal();
 }
-/* Rezumatul unei zile pentru un sit, din prognoza salvată (summarize() e în core.js). */
-function daySummary(site, d){ const hs = hours(); return summarize(site, hs, hs.map(h => hourData(site, `${d}T${h}:00`)), settings); }
+/* Rezumatul unei zile pentru un sit, din prognoza salvată (summarize() e în core.js). Cele 2 ore de după contează pentru furtuni. */
+function daySummary(site, d){
+  const hs = hours(), last = hs[hs.length - 1];
+  return summarize(site, hs, hs.map(h => hourData(site, `${d}T${h}:00`)), settings, [1, 2].map(k => hourData(site, `${d}T${hPlus(last, k)}:00`)));
+}
+/* Direcțiile unei decolări, în cuvinte. */
+function dirsTxt(s){
+  const of = v => s.o.map((x, i) => x === v ? DIRS[i] : '').filter(Boolean).join(', ');
+  if (!s.o.some(Boolean)) return t('fără direcții setate');
+  return [of(2) && t('bune: {d}', {d: of(2)}), of(1) && t('marginale: {d}', {d: of(1)})].filter(Boolean).join(' · ');
+}
 function openSite(si){
   const s = sites[si], ds = dates(), hs = hours();
   $('#cellTitle').textContent = s.n;

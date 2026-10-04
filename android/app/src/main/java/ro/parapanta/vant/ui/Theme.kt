@@ -24,11 +24,11 @@ data class Palette(
     val accent: Color, val accentInk: Color,
     val go: Color, val goBg: Color, val maybe: Color, val maybeBg: Color,
     val no: Color, val noBg: Color, val calm: Color, val calmBg: Color,
-    val sun: Color, val water: Color, val sky: Color,
+    val sun: Color, val water: Color, val sky: Color, val night: Color, val nightBg: Color,
 ) {
-    fun fg(s: Status) = when (s) { Status.GO -> go; Status.MAYBE -> maybe; Status.NO -> no; Status.CALM -> calm; Status.NA -> muted }
-    fun bgOf(s: Status) = when (s) { Status.GO -> goBg; Status.MAYBE -> maybeBg; Status.NO -> noBg; Status.CALM -> calmBg; Status.NA -> surface }
-    fun dot(s: Status) = when (s) { Status.NA -> line; else -> fg(s) }
+    fun fg(s: Status) = when (s) { Status.GO -> go; Status.MAYBE -> maybe; Status.NO -> no; Status.CALM -> calm; Status.NIGHT -> night; Status.NA -> muted }
+    fun bgOf(s: Status) = when (s) { Status.GO -> goBg; Status.MAYBE -> maybeBg; Status.NO -> noBg; Status.CALM -> calmBg; Status.NIGHT -> nightBg; Status.NA -> surface }
+    fun dot(s: Status) = when (s) { Status.NA -> line; Status.NIGHT -> nightBg; else -> fg(s) }
 }
 
 private val Light = Palette(
@@ -36,14 +36,14 @@ private val Light = Palette(
     muted = Color(0xFF5A6A76), line = Color(0xFFD5DDE3), accent = Color(0xFFD4570C), accentInk = Color.White,
     go = Color(0xFF17804A), goBg = Color(0xFFD9F0E2), maybe = Color(0xFF9A6A0E), maybeBg = Color(0xFFF8ECC9),
     no = Color(0xFFB8322B), noBg = Color(0xFFF7DCD9), calm = Color(0xFF5F6F7B), calmBg = Color(0xFFE6ECF0),
-    sun = Color(0xFFD99A06), water = Color(0xFF2A76CF), sky = Color(0xFF4F5F6B),
+    sun = Color(0xFFD99A06), water = Color(0xFF2A76CF), sky = Color(0xFF4F5F6B), night = Color(0xFF7D8B95), nightBg = Color(0xFFDFE5EA),
 )
 private val Dark = Palette(
     bg = Color(0xFF0D151B), surface = Color(0xFF152029), sunk = Color(0xFF1B2832), ink = Color(0xFFE4EBF0),
     muted = Color(0xFF93A3AE), line = Color(0xFF26343E), accent = Color(0xFFFF8A3D), accentInk = Color(0xFF1A0D04),
     go = Color(0xFF5FD394), goBg = Color(0xFF153526), maybe = Color(0xFFE8B852), maybeBg = Color(0xFF3A2F12),
     no = Color(0xFFF2776D), noBg = Color(0xFF3F1C1A), calm = Color(0xFF93A3AE), calmBg = Color(0xFF1E2B35),
-    sun = Color(0xFFF2C14E), water = Color(0xFF6AA8F0), sky = Color(0xFFB4C2CC),
+    sun = Color(0xFFF2C14E), water = Color(0xFF6AA8F0), sky = Color(0xFFB4C2CC), night = Color(0xFF5D6D78), nightBg = Color(0xFF0A1116),
 )
 
 val LocalPalette = staticCompositionLocalOf { Light }

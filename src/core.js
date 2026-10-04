@@ -3,20 +3,30 @@
    build.py inserează fișierul în pagină; tests/core.test.mjs îl testează cu node --test.
    Folosește t() și DIRS din pagină (sau din test). Aceleași reguli ca Flyability.kt, Sky.kt și DaySummary.kt:
    orice schimbare începe cu un caz nou în data/test_vectors/, citit de ambele platforme. */
-const RANK = {na:-1, go:0, calm:1, maybe:2, no:3};
+const RANK = {night:-2, na:-1, go:0, calm:1, maybe:2, no:3};
+/* Pragurile avertizărilor (SIG-01, SIG-02) și fereastra minimă (SIG-05). Fixe deocamdată; aceleași în Flyability.kt. */
+const ALT_MARG = 8, ALT_NO = 12, ALT_BEHIND = 5;      // vânt la ~1500 m (850 hPa), m/s
+const CAPE_RISK = 800, LI_RISK = -2;                  // supradezvoltare
+const STORM_AHEAD = 2;                                // ore înainte de o furtună prognozată
+const MIN_WINDOW = 2;                                 // ore favorabile la rând ca ziua să fie „Favorabil”
 
 function sectorOf(deg){ return Math.round(((deg % 360) + 360) % 360 / 45) % 8; }
+const knownDirs = site => site.o.some(v => v > 0);
 
-/* Starea unei ore = cea mai rea componentă. */
-function rate(site, w, s){
-  if (!w || w.ws == null || w.wd == null) return {st:'na', why:[]};
-  const why = []; let st = 'go';
-  const bump = (to, msg) => { why.push([to, msg]); if (RANK[to] > RANK[st]) st = to; };
+/* Starea unei ore = cea mai rea componentă. ctx.next = următoarele ore (pentru furtunile care vin).
+   warn: 'alt' (vânt la altitudine), 'storm' (supradezvoltare / furtună), 'nodir' (decolare fără direcții). */
+function rate(site, w, s, ctx = {}){
+  if (!w || w.ws == null || w.wd == null) return {st:'na', why:[], warn:[]};
+  if (w.day === 0) return {st:'night', why:[['night', t('Noapte: fără lumină de zbor')]], warn:[]};
+  const why = [], warn = []; let st = 'go';
+  const bump = (to, msg, kind) => { why.push([to, msg, kind]); if (kind && !warn.includes(kind)) warn.push(kind); if (RANK[to] > RANK[st]) st = to; };
+  const known = knownDirs(site);
   if (w.ws < s.calm){
     st = 'calm'; why.push(['calm', t('Vânt slab ({v} m/s), direcția nu contează', {v: w.ws.toFixed(1)})]);
   } else {
     const sec = sectorOf(w.wd), sc = site.o[sec];
-    if (sc === 2) why.push(['go', t('Direcție bună ({d})', {d: DIRS[sec]})]);
+    if (!known) bump('maybe', t('Decolarea nu are direcții setate: verifică dacă vântul din {d} e bun aici', {d: DIRS[sec]}), 'nodir');
+    else if (sc === 2) why.push(['go', t('Direcție bună ({d})', {d: DIRS[sec]})]);
     else if (sc === 1) bump('maybe', t('Direcție marginală ({d})', {d: DIRS[sec]}));
     else bump('no', t('Direcție nepotrivită ({d}) pentru decolare', {d: DIRS[sec]}));
     if (w.ws > s.marg) bump('no', t('Vânt prea tare: {v} m/s (peste {lim})', {v: w.ws.toFixed(1), lim: s.marg}));
@@ -27,15 +37,34 @@ function rate(site, w, s){
     else if (w.wg - w.ws > s.spread) bump('maybe', t('Turbulent: rafalele depășesc vântul cu {v} m/s', {v: (w.wg-w.ws).toFixed(1)}));
   }
   if (w.pr != null && w.pr > s.rain) bump('no', t('Ploaie {v} mm/h', {v: w.pr.toFixed(1)}));
-  return {st, why};
+  // SIG-01: vântul de la ~1500 m. Tare, sau din spatele decolării (zonă de sub vânt, rotori).
+  if (w.w8 != null && w.d8 != null){
+    const s8 = sectorOf(w.d8);
+    if (w.w8 > ALT_NO) bump('no', t('Vânt foarte tare la ~1500 m: {v} m/s (peste {lim})', {v: w.w8.toFixed(1), lim: ALT_NO}), 'alt');
+    else if (w.w8 > ALT_MARG) bump('maybe', t('Vânt tare la ~1500 m: {v} m/s (peste {lim})', {v: w.w8.toFixed(1), lim: ALT_MARG}), 'alt');
+    if (known && site.o[s8] === 0 && w.w8 > ALT_BEHIND)
+      bump('maybe', t('Vânt la ~1500 m din spatele decolării ({d}, {v} m/s): risc de rotori', {d: DIRS[s8], v: w.w8.toFixed(1)}), 'alt');
+  }
+  // SIG-02: furtună acum sau în următoarele ore; altfel instabilitate mare (supradezvoltare).
+  const storm = [w, ...(ctx.next || [])].slice(0, STORM_AHEAD + 1).findIndex(x => x && x.code >= 95);
+  if (storm === 0) bump('no', t('Furtună prognozată la această oră'), 'storm');
+  else if (storm === 1) bump('no', t('Furtună prognozată în ora următoare'), 'storm');
+  else if (storm > 1) bump('no', t('Furtună prognozată peste {n} ore', {n: storm}), 'storm');
+  else if (w.cape != null && w.li != null && w.cape > CAPE_RISK && w.li < LI_RISK)
+    bump('maybe', t('Risc de supradezvoltare: CAPE {c} J/kg, LI {li}', {c: Math.round(w.cape), li: String(Math.round(w.li * 10) / 10).replace('-', '−')}), 'storm');
+  return {st, why, warn};
 }
 
-/* Rezumatul unei zile: starea pe fiecare oră și cel mai lung interval bun (sau marginal). hs = orele afișate, ws = datele lor. */
-function summarize(site, hs, ws, s){
-  const sts = ws.map(w => rate(site, w, s).st);
-  const run = x => { let best = null, start = -1;
-    sts.forEach((y, i) => { if (y === x){ if (start < 0) start = i; if (!best || i - start > best[1] - best[0]) best = [start, i]; } else start = -1; });
-    return best; };
+/* Rezumatul unei zile. hs = orele afișate, ws = datele lor, extra = orele de după (furtuni care vin).
+   „Favorabil” doar pentru minimum MIN_WINDOW ore bune la rând; o oră izolată apare ca „Doar …”. */
+function summarize(site, hs, ws, s, extra = []){
+  const all = [...ws, ...extra];
+  const rs = ws.map((w, i) => rate(site, w, s, {next: [all[i + 1], all[i + 2]]})), sts = rs.map(r => r.st);
+  const runs = x => { const out = []; let a = -1;
+    sts.forEach((y, i) => { if (y === x){ if (a < 0) a = i; } else if (a >= 0){ out.push([a, i - 1]); a = -1; } });
+    if (a >= 0) out.push([a, sts.length - 1]);
+    return out; };
+  const longest = l => l.reduce((b, r) => !b || r[1] - r[0] > b[1] - b[0] ? r : b, null);
   const span = ([a, b]) => a === b ? t('ora {h}', {h: hs[a]}) : `${hs[a]}–${hs[b]}`;
   const n = ([a, b]) => b - a + 1;
   const wind = ([a, b]) => {
@@ -45,12 +74,16 @@ function summarize(site, hs, ws, s){
     const lo = Math.round(Math.min(...part.map(w => w.ws))), hi = Math.round(Math.max(...part.map(w => w.ws)));
     return t('vânt din {d} {r} m/s', {d: dir, r: lo === hi ? lo : lo + '–' + hi});
   };
-  const g = run('go'), m = run('maybe'), c = run('calm');
-  if (g) return {sts, st:'go', text: t('Bun de zbor {s} ({n}) · {w}', {s: span(g), n: n(g) === 1 ? t('1 oră') : t('{n} ore', {n: n(g)}), w: wind(g)})};
-  if (m) return {sts, st:'maybe', text: t('Cel mult marginal: {s} · {w}', {s: span(m), w: wind(m)})};
-  if (sts.every(x => x === 'na')) return {sts, st:'na', text: t('Fără date')};
-  if (c) return {sts, st:'calm', text: t('Nicio oră bună · calm (sub {c} m/s) {s}', {c: s.calm, s: span(c)})};
-  return {sts, st:'no', text: t('Nicio oră bună de zbor')};
+  const goRuns = runs('go'), g = longest(goRuns.filter(r => n(r) >= MIN_WINDOW)), m = longest(runs('maybe')), c = longest(runs('calm'));
+  const si = rs.findIndex(r => r.warn.includes('storm'));
+  const tail = si >= 0 ? t(' · risc de supradezvoltare de la {h}:00', {h: hs[si]}) : '';
+  if (g) return {sts, st:'go', text: t('Favorabil {s} ({n}) · {w}', {s: span(g), n: n(g) === 1 ? t('1 oră') : t('{n} ore', {n: n(g)}), w: wind(g)}) + tail};
+  if (goRuns.length) return {sts, st:'maybe', text: t('Doar {s}, sub fereastra minimă de {n} ore', {s: goRuns.map(span).join(', '), n: MIN_WINDOW})
+    + (m ? t(' · marginal {s}', {s: span(m)}) : '') + tail};
+  if (m) return {sts, st:'maybe', text: t('Cel mult marginal: {s} · {w}', {s: span(m), w: wind(m)}) + tail};
+  if (sts.every(x => x === 'na' || x === 'night')) return {sts, st:'na', text: t('Fără date')};
+  if (c) return {sts, st:'calm', text: t('Nicio fereastră bună · calm (sub {c} m/s) {s}', {c: s.calm, s: span(c)}) + tail};
+  return {sts, st:'no', text: t('Nicio fereastră bună') + tail};
 }
 
 /* ---------- cer ---------- */
