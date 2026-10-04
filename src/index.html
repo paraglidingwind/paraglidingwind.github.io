@@ -477,8 +477,16 @@ const TZ_POINT = ({
   'Australia/Sydney':[-33.8,151.0], 'Pacific/Auckland':[-40.9,174.9],
 })[TZ] || null;
 /* Lista inițială: cele 6 decolări din zona Cluj doar pentru cine e în România; în rest pornim cu lista goală. */
-/* ONB-01: fără listă salvată = prima pornire; alegi singur decolările (nu mai primești automat lista din Cluj). */
-let sites = store.get('vld.sites', null) || [];
+/* ONB-01: fără listă salvată = prima pornire; alegi singur decolările (nu mai primești automat lista din Cluj).
+   Excepție: cine a folosit versiunea veche (are prognoza ei salvată, vld.fc2) fără să-și editeze lista vedea lista
+   din Cluj, nesalvată; o salvăm acum, ca să nu-i apară prima pornire după actualizare. */
+const DEFAULT_SITES = __DEFAULT_SITES__;
+let sites = store.get('vld.sites', null);
+if (sites === null){
+  let used = false; try { used = localStorage.getItem('vld.fc2') !== null; } catch {}
+  if (used && (TZ === 'Europe/Bucharest' || !TZ)){ sites = structuredClone(DEFAULT_SITES); store.set('vld.sites', sites); }
+}
+sites ??= [];
 /* Decolările ParaglidingEarth: pe țări (docs/sites/<ȚARĂ>.json, cu indexul docs/sites/index.json) și, doar la cerere, toate (sites.json, ≈ 1 MB). */
 let refPoint = null, SITE_INDEX = null, ALL_SITES = null, allSitesP = null;
 const COUNTRY_SITES = {};
