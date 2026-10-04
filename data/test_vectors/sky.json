@@ -1,0 +1,202 @@
+{
+ "_": "Cazuri comune pentru sky(): pictograma, eticheta (în română) și tipul de nor.",
+ "cases": [
+  {
+   "name": "senin ziua",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0,
+    "cc": 5,
+    "lo": 0,
+    "mi": 0,
+    "hi": 0,
+    "cape": 0,
+    "code": 0,
+    "day": 1
+   },
+   "icon": "sun",
+   "label": "Senin",
+   "type": null
+  },
+  {
+   "name": "senin noaptea",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0,
+    "cc": 5,
+    "lo": 0,
+    "mi": 0,
+    "hi": 0,
+    "cape": 0,
+    "code": 0,
+    "day": 0
+   },
+   "icon": "moon"
+  },
+  {
+   "name": "cumulus",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0,
+    "cc": 40,
+    "lo": 40,
+    "mi": 0,
+    "hi": 0,
+    "cape": 400,
+    "code": 0,
+    "day": 1
+   },
+   "icon": "cumulus",
+   "label": "Parțial noros",
+   "type": "Cumulus"
+  },
+  {
+   "name": "congestus",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0,
+    "cc": 60,
+    "lo": 60,
+    "mi": 0,
+    "hi": 0,
+    "cape": 1500,
+    "code": 0,
+    "day": 1
+   },
+   "type": "Cumulus congestus"
+  },
+  {
+   "name": "stratus",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0,
+    "cc": 95,
+    "lo": 95,
+    "mi": 0,
+    "hi": 0,
+    "cape": 0,
+    "code": 0,
+    "day": 1
+   },
+   "icon": "overcast",
+   "label": "Înnorat",
+   "type": "Stratus"
+  },
+  {
+   "name": "cirrus",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0,
+    "cc": 30,
+    "lo": 0,
+    "mi": 0,
+    "hi": 30,
+    "cape": 0,
+    "code": 0,
+    "day": 1
+   },
+   "icon": "cirrus",
+   "label": "Parțial noros",
+   "type": "Cirrus"
+  },
+  {
+   "name": "altocumulus",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0,
+    "cc": 60,
+    "lo": 0,
+    "mi": 60,
+    "hi": 0,
+    "cape": 0,
+    "code": 0,
+    "day": 1
+   },
+   "type": "Altocumulus"
+  },
+  {
+   "name": "furtună",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0,
+    "cc": 90,
+    "lo": 80,
+    "mi": 0,
+    "hi": 0,
+    "cape": 0,
+    "code": 95,
+    "day": 1
+   },
+   "icon": "thunder",
+   "label": "Furtună",
+   "type": "Cumulonimbus"
+  },
+  {
+   "name": "averse",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0,
+    "cc": 70,
+    "lo": 70,
+    "mi": 0,
+    "hi": 0,
+    "cape": 0,
+    "code": 80,
+    "day": 1
+   },
+   "icon": "rain"
+  },
+  {
+   "name": "ninsoare",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0,
+    "cc": 90,
+    "lo": 0,
+    "mi": 0,
+    "hi": 0,
+    "cape": 0,
+    "code": 73,
+    "day": 1
+   },
+   "icon": "snow"
+  },
+  {
+   "name": "ceață",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0,
+    "cc": 100,
+    "lo": 100,
+    "mi": 0,
+    "hi": 0,
+    "cape": 0,
+    "code": 45,
+    "day": 1
+   },
+   "icon": "fog"
+  }
+ ]
+}

@@ -1,17 +1,26 @@
 #!/usr/bin/env python3
 """Generează docs/index.html (GitHub Pages) din src/index.html + data/*.json."""
-import json, pathlib
+import datetime, json, pathlib, subprocess
 root = pathlib.Path(__file__).parent
-ro = (root / "data/ro_sites.json").read_text()
 init = (root / "data/initial_sites.json").read_text()
 icons = json.loads((root / "data/sky_icons.json").read_text())
-html = (root / "src/index.html").read_text().replace("__RO_SITES__", ro).replace("__DEFAULT_SITES__", init) \
+# Versiunea afișată în pagină: data build-ului + commitul de pornire (cu „+” dacă sursa avea modificări necomise).
+try:
+    rev = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=root, capture_output=True, text=True).stdout.strip()
+    dirty = subprocess.run(["git", "status", "--porcelain", "src", "data", "build.py"], cwd=root, capture_output=True, text=True).stdout.strip()
+    rev += "+" if dirty else ""
+except OSError:
+    rev = ""
+version = datetime.date.today().strftime("%Y.%m.%d") + (f" · {rev}" if rev else "")
+html = (root / "src/index.html").read_text().replace("__CORE_JS__", (root / "src/core.js").read_text().rstrip()) \
+    .replace("__DEFAULT_SITES__", init) \
     .replace("__SKY_ICONS__", json.dumps(icons, separators=(",", ":"))) \
     .replace("__I18N_EN__", json.dumps(json.loads((root / "data/i18n_en.json").read_text()), ensure_ascii=False, separators=(",", ":"))) \
-    .replace("__HOLFUY__", (root / "data/holfuy_ro.json").read_text()) \
-    .replace("__GOOGLE_CLIENT_ID__", json.dumps(json.loads((root / "data/google.json").read_text())["clientId"]))
+    .replace("__GOOGLE_CLIENT_ID__", json.dumps(json.loads((root / "data/google.json").read_text())["clientId"])) \
+    .replace("__VERSION__", version)
+assert "__" + "CORE_JS__" not in html
 (root / "docs/index.html").write_text(html)
-print("docs/index.html", len(html), "bytes")
+print("docs/index.html", len(html), "bytes ·", version)
 
 # Aceleași pictograme pentru aplicația Android.
 kt = ["package ro.parapanta.vant.ui", "", "// Generat de build.py din data/sky_icons.json. Nu edita manual.",

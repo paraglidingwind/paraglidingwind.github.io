@@ -1,0 +1,154 @@
+{
+ "_": "Cazuri comune pentru rate(): le citesc tests/core.test.mjs și VectorsTest.kt. Se compară starea.",
+ "settings": {
+  "good": 5,
+  "marg": 7,
+  "calm": 1,
+  "gust": 9,
+  "spread": 4,
+  "rain": 0.2,
+  "from": 8,
+  "to": 20
+ },
+ "sites": {
+  "liteni": [
+   0,
+   1,
+   2,
+   2,
+   1,
+   0,
+   0,
+   0
+  ]
+ },
+ "cases": [
+  {
+   "name": "est ușor = bun",
+   "site": "liteni",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 0.0
+   },
+   "st": "go"
+  },
+  {
+   "name": "vest = nu",
+   "site": "liteni",
+   "w": {
+    "ws": 3,
+    "wd": 270,
+    "wg": 4,
+    "pr": 0.0
+   },
+   "st": "no"
+  },
+  {
+   "name": "sud = marginal",
+   "site": "liteni",
+   "w": {
+    "ws": 3,
+    "wd": 180,
+    "wg": 4,
+    "pr": 0.0
+   },
+   "st": "maybe"
+  },
+  {
+   "name": "est prea tare = nu",
+   "site": "liteni",
+   "w": {
+    "ws": 8,
+    "wd": 90,
+    "wg": 9,
+    "pr": 0.0
+   },
+   "st": "no"
+  },
+  {
+   "name": "est tare = marginal",
+   "site": "liteni",
+   "w": {
+    "ws": 6,
+    "wd": 90,
+    "wg": 7,
+    "pr": 0.0
+   },
+   "st": "maybe"
+  },
+  {
+   "name": "calm, direcția nu contează",
+   "site": "liteni",
+   "w": {
+    "ws": 0.5,
+    "wd": 270,
+    "wg": 1.5,
+    "pr": 0.0
+   },
+   "st": "calm"
+  },
+  {
+   "name": "rafale peste prag = nu",
+   "site": "liteni",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 10,
+    "pr": 0.0
+   },
+   "st": "no"
+  },
+  {
+   "name": "diferență mare rafală-vânt = marginal",
+   "site": "liteni",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 7.5,
+    "pr": 0.0
+   },
+   "st": "maybe"
+  },
+  {
+   "name": "ploaie = nu",
+   "site": "liteni",
+   "w": {
+    "ws": 3,
+    "wd": 90,
+    "wg": 4,
+    "pr": 1.0
+   },
+   "st": "no"
+  },
+  {
+   "name": "fără date",
+   "site": "liteni",
+   "w": null,
+   "st": "na"
+  },
+  {
+   "name": "limita bun/marginal: exact 5 m/s e încă bun",
+   "site": "liteni",
+   "w": {
+    "ws": 5,
+    "wd": 90,
+    "wg": 6,
+    "pr": 0.0
+   },
+   "st": "go"
+  },
+  {
+   "name": "limita calm: exact 1 m/s nu mai e calm",
+   "site": "liteni",
+   "w": {
+    "ws": 1,
+    "wd": 90,
+    "wg": 2,
+    "pr": 0.0
+   },
+   "st": "go"
+  }
+ ]
+}

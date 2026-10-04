@@ -1,0 +1,41 @@
+{
+ "_": "Cazuri comune pentru parseCoords(): [lat, lon] sau null.",
+ "cases": [
+  {
+   "in": "46.6129, 23.4350",
+   "out": [
+    46.6129,
+    23.435
+   ]
+  },
+  {
+   "in": "https://www.google.com/maps/@46.9301,23.5512,15z",
+   "out": [
+    46.9301,
+    23.5512
+   ]
+  },
+  {
+   "in": "https://www.google.com/maps/place/X/data=!3d46.1!4d23.2",
+   "out": [
+    46.1,
+    23.2
+   ]
+  },
+  {
+   "in": "https://maps.google.com/?q=46.5,23.6",
+   "out": [
+    46.5,
+    23.6
+   ]
+  },
+  {
+   "in": "https://maps.app.goo.gl/abcdef",
+   "out": null
+  },
+  {
+   "in": "Făureni",
+   "out": null
+  }
+ ]
+}
