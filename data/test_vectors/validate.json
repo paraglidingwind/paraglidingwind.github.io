@@ -1,0 +1,130 @@
+{
+ "_": "Cazuri comune pentru validateFlight() și validateSettings(): mesajul în română sau null.",
+ "today": "2026-10-04",
+ "flight": [
+  {
+   "site": " ",
+   "date": "2026-10-04",
+   "h": 1,
+   "m": 0,
+   "err": "Alege sau scrie locația."
+  },
+  {
+   "site": "Liteni",
+   "date": "",
+   "h": 1,
+   "m": 0,
+   "err": "Alege data."
+  },
+  {
+   "site": "Liteni",
+   "date": "2099-01-01",
+   "h": 1,
+   "m": 0,
+   "err": "Data nu poate fi în viitor."
+  },
+  {
+   "site": "Liteni",
+   "date": "2026-10-04",
+   "h": -1,
+   "m": 0,
+   "err": "Orele și minutele nu pot fi negative."
+  },
+  {
+   "site": "Liteni",
+   "date": "2026-10-04",
+   "h": 0,
+   "m": 0,
+   "err": "Scrie cât timp ai stat în aer."
+  },
+  {
+   "site": "Liteni",
+   "date": "2026-10-04",
+   "h": 99,
+   "m": 0,
+   "err": "O zi are cel mult 24 de ore în aer."
+  },
+  {
+   "site": "Liteni",
+   "date": "2026-10-04",
+   "h": 24,
+   "m": 0,
+   "err": null
+  },
+  {
+   "site": "Liteni",
+   "date": "2026-10-04",
+   "h": 1,
+   "m": 20,
+   "err": null
+  }
+ ],
+ "settings": [
+  {
+   "s": {
+    "good": 5,
+    "marg": 7,
+    "calm": 1,
+    "gust": 9,
+    "spread": 4,
+    "rain": 0.2
+   },
+   "err": null
+  },
+  {
+   "s": {
+    "good": 5,
+    "marg": 7,
+    "calm": -1,
+    "gust": 9,
+    "spread": 4,
+    "rain": 0.2
+   },
+   "err": "Pragurile trebuie să fie numere pozitive."
+  },
+  {
+   "s": {
+    "good": 5,
+    "marg": 7,
+    "calm": 5,
+    "gust": 9,
+    "spread": 4,
+    "rain": 0.2
+   },
+   "err": "„Calm sub” trebuie să fie mai mic decât „Bun până la”."
+  },
+  {
+   "s": {
+    "good": 8,
+    "marg": 6,
+    "calm": 1,
+    "gust": 9,
+    "spread": 4,
+    "rain": 0.2
+   },
+   "err": "„Bun până la” nu poate depăși „Marginal până la”."
+  },
+  {
+   "s": {
+    "good": 5,
+    "marg": 7,
+    "calm": 1,
+    "gust": 4,
+    "spread": 4,
+    "rain": 0.2
+   },
+   "err": "„Rafale maxime” nu poate fi sub „Bun până la”."
+  },
+  {
+   "s": {
+    "good": 4,
+    "marg": 5,
+    "calm": 1,
+    "gust": 6,
+    "spread": 3,
+    "rain": 0.2
+   },
+   "err": null
+  }
+ ]
+}

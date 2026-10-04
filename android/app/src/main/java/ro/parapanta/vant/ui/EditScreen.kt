@@ -66,6 +66,7 @@ import ro.parapanta.vant.model.distKm
 import kotlin.math.roundToInt
 import ro.parapanta.vant.model.Site
 import ro.parapanta.vant.model.Thresholds
+import ro.parapanta.vant.model.validateThresholds
 import ro.parapanta.vant.model.key
 import ro.parapanta.vant.model.parseCoords
 import ro.parapanta.vant.model.trim
@@ -248,17 +249,24 @@ private fun ThresholdsForm(th: Thresholds, onChange: (Thresholds) -> Unit) {
             Triple("De la ora", th.from.toDouble()) { v -> th.copy(from = v.toInt().coerceIn(0, 23)) },
             Triple("Până la ora", th.to.toDouble()) { v -> th.copy(to = v.toInt().coerceIn(0, 23)) },
         )
+        // BUG-06: o valoare care strică ordinea pragurilor nu se salvează; mesajul spune de ce.
+        var err by remember { mutableStateOf<String?>(null) }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), maxItemsInEachRow = 2) {
             fields.forEach { (label, value, make) ->
                 var txt by remember(value) { mutableStateOf(value.trim()) }
                 OutlinedTextField(txt, {
                     txt = it
-                    it.replace(',', '.').toDoubleOrNull()?.let { v -> onChange(make(v)) }
+                    it.replace(',', '.').toDoubleOrNull()?.let { v ->
+                        val next = make(v)
+                        err = validateThresholds(next)
+                        if (err == null) onChange(next)
+                    }
                 }, Modifier.weight(1f).padding(bottom = 8.dp), label = { Text(label, maxLines = 1) }, singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
             }
         }
-        OutlinedButton(onClick = { onChange(Thresholds()) }) { Text("Praguri implicite") }
+        err?.let { Text(it, color = LocalPalette.current.no, fontSize = 13.sp, modifier = Modifier.padding(bottom = 8.dp)) }
+        OutlinedButton(onClick = { err = null; onChange(Thresholds()) }) { Text("Praguri implicite") }
     }
 }
 

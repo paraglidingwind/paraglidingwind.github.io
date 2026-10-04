@@ -339,6 +339,7 @@ input.in,textarea.in,select.in{width:100%;min-height:44px;padding:9px 12px;borde
       <div><label class="f" for="sFrom">De la ora</label><input class="in" id="sFrom" type="number" min="0" max="23" inputmode="numeric"></div>
       <div><label class="f" for="sTo">Până la ora</label><input class="in" id="sTo" type="number" min="0" max="23" inputmode="numeric"></div>
     </div>
+    <p class="err" id="sErr" hidden></p>
     <div class="actions"><button class="btn small" id="resetSettings" type="button">Praguri implicite</button></div>
   </div>
 </div></dialog>
@@ -459,8 +460,8 @@ async function load(force){
       elevation: sites.map(s => s.alt ?? 'nan').join(','),
       hourly: HOURLY, daily: 'sunrise,sunset', wind_speed_unit:'ms', timezone: TZ || 'auto', forecast_days:'7'
     });
-    const r = await fetch('https://api.open-meteo.com/v1/forecast?' + p);
-    if (!r.ok) throw new Error(t('Serverul de prognoză a răspuns {s}', {s: r.status}));
+    const r = await fetchRetry('https://api.open-meteo.com/v1/forecast?' + p);
+    if (!r.ok) throw new Error(r.status >= 500 ? t('Serviciul de prognoză nu răspunde momentan.') : t('Serviciul de prognoză a refuzat cererea (cod {s}).', {s: r.status}));
     let data = await r.json(); if (!Array.isArray(data)) data = [data];
     const bySite = {};
     data.forEach((d, i) => {
@@ -473,7 +474,8 @@ async function load(force){
     fc = {at: Date.now(), bySite};
     store.set('vld.fc3', fc);
   }catch(e){
-    lastError = navigator.onLine === false ? t('Ești offline.') : (e.message || t('Eroare de rețea.'));
+    lastError = navigator.onLine === false ? t('Ești offline.') : e.name === 'AbortError' ? t('Serviciul de prognoză nu a răspuns la timp.')
+      : e instanceof TypeError ? t('Eroare de rețea.') : (e.message || t('Eroare de rețea.'));
   }finally{ loading = false; render(); }
 }
 
@@ -784,13 +786,7 @@ $('#flForm').addEventListener('submit', e => {
   e.preventDefault();
   const site = ($('#flSite').value === '__other' ? $('#flSiteOther').value : $('#flSite').value).trim();
   const date = $('#flDate').value, h = parseInt($('#flH').value, 10) || 0, m = parseInt($('#flM').value, 10) || 0, minutes = h * 60 + m;
-  const err = $('#flErr');
-  let msg = '';
-  if (!site) msg = t('Alege sau scrie locația.');
-  else if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) msg = t('Alege data.');
-  else if (date > localDate(new Date())) msg = t('Data nu poate fi în viitor.');
-  else if (h < 0 || m < 0) msg = t('Orele și minutele nu pot fi negative.');
-  else if (minutes <= 0) msg = t('Scrie cât timp ai stat în aer.');
+  const err = $('#flErr'), msg = validateFlight(site, date, h, m, localDate(new Date()));
   if (msg){ err.textContent = msg; err.hidden = false; return; }
   if (editingId){ const f = flights.find(x => x.id === editingId); Object.assign(f, {site, date, minutes, u: Date.now()}); }
   else flights.push({id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date, site, minutes, u: Date.now()});
@@ -1074,11 +1070,20 @@ function syncPanel(){
     <button class="btn small" id="gSignOut" type="button">${t(signOutArmed ? 'Apasă din nou: jurnalul rămâne în Drive și se șterge de pe acest dispozitiv' : 'Deconectează-te')}</button>
     ${syncErr ? `<p class="err">${syncErr}</p>` : ''}</div>`;
 }
-function signOut(){
+async function signOut(){
+  signOutArmed = false;
+  // Întâi încercăm să urcăm ce nu a ajuns în Drive; dacă nu reușim, nu ștergem nimic de pe dispozitiv.
+  if (store.get('vld.dirty', false)){
+    await syncNow();
+    if (store.get('vld.dirty', false)){
+      syncErr = t('Ai modificări care nu au ajuns în Drive, așa că nu te-am deconectat. Exportă jurnalul în Excel sau încearcă din nou când ai internet.');
+      return renderLog();
+    }
+  }
   if (gTok && window.google?.accounts?.oauth2) google.accounts.oauth2.revoke(gTok.t, () => {});
   gAcct = null; gTok = null; tomb = {}; flights = [];
   for (const k of ['vld.gacct', 'vld.gtoken', 'vld.tomb', 'vld.dirty', 'vld.synced']) store.set(k, null);
-  saveFlights(); signOutArmed = false; renderLog(); toast(t('Te-ai deconectat. Jurnalul e în siguranță în Drive.'));
+  saveFlights(); renderLog(); toast(t('Te-ai deconectat. Jurnalul e în siguranță în Drive.'));
 }
 
 /* ---------- evenimente ---------- */
@@ -1252,9 +1257,12 @@ for (const [k, id] of Object.entries(SETTING_IDS)){
   $('#'+id).addEventListener('change', e => {
     const v = parseFloat(e.target.value);
     if (!isFinite(v)) return fillSettings();
-    settings[k] = (k === 'from' || k === 'to') ? Math.min(23, Math.max(0, Math.round(v))) : v;
-    if (settings.from > settings.to) [settings.from, settings.to] = [settings.to, settings.from];
-    store.set('vld.settings', settings); fillSettings(); render();
+    const next = {...settings, [k]: (k === 'from' || k === 'to') ? Math.min(23, Math.max(0, Math.round(v))) : v};
+    if (next.from > next.to) [next.from, next.to] = [next.to, next.from];
+    const msg = validateSettings(next), err = $('#sErr');
+    err.hidden = !msg; err.textContent = msg || '';
+    if (msg) return fillSettings();
+    settings = next; store.set('vld.settings', settings); fillSettings(); render();
   });
 }
 for (const d of document.querySelectorAll('dialog')){

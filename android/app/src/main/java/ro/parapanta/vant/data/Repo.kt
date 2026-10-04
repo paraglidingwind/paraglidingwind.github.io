@@ -2,6 +2,7 @@ package ro.parapanta.vant.data
 
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.decodeFromString
@@ -51,6 +52,9 @@ private data class OmHourly(
     @SerialName("lifted_index") val li: List<Double?> = emptyList(),
 )
 
+/** Răspuns HTTP fără date (cod ≠ 200). */
+class HttpError(val code: Int) : java.io.IOException("HTTP $code")
+
 class Repo(private val ctx: Context) {
     private val prefs = ctx.getSharedPreferences("vant", Context.MODE_PRIVATE)
     // forecast3: are și lifted_index, răsărit, apus (forecast2 nu le avea).
@@ -97,23 +101,35 @@ class Repo(private val ctx: Context) {
             "timezone" to "Europe/Bucharest",
             "forecast_days" to "7",
         ).joinToString("&") { (k, v) -> "$k=${enc(v)}" }
-        val conn = URL("https://api.open-meteo.com/v1/forecast?$q").openConnection() as HttpURLConnection
-        conn.connectTimeout = 15000
-        conn.readTimeout = 20000
-        try {
-            if (conn.responseCode != 200) error("Serverul de prognoză a răspuns ${conn.responseCode}")
-            val body = conn.inputStream.bufferedReader().use { it.readText() }
-            val el = json.parseToJsonElement(body)
-            val items: List<JsonElement> = if (el is JsonArray) el else listOf(el)
-            val bySite = sites.zip(items).associate { (s, e) ->
-                val r = json.decodeFromJsonElement(OmResp.serializer(), e)
-                val h = r.hourly
-                s.key to SiteForecast(h.time, h.ws, h.wd, h.wg, h.pr, h.cc, h.cape, h.tt, h.w8, h.d8, h.code, h.lo, h.mi, h.hi, h.day, h.li,
-                    r.daily?.sunrise ?: emptyList(), r.daily?.sunset ?: emptyList())
+        val body = getWithRetry("https://api.open-meteo.com/v1/forecast?$q")
+        val el = json.parseToJsonElement(body)
+        val items: List<JsonElement> = if (el is JsonArray) el else listOf(el)
+        val bySite = sites.zip(items).associate { (s, e) ->
+            val r = json.decodeFromJsonElement(OmResp.serializer(), e)
+            val h = r.hourly
+            s.key to SiteForecast(h.time, h.ws, h.wd, h.wg, h.pr, h.cc, h.cape, h.tt, h.w8, h.d8, h.code, h.lo, h.mi, h.hi, h.day, h.li,
+                r.daily?.sunrise ?: emptyList(), r.daily?.sunset ?: emptyList())
+        }
+        ForecastCache(System.currentTimeMillis(), bySite).also { cacheFile.writeText(json.encodeToString(it)) }
+    }
+
+    /** FIA-02: timeout 15 s; la o eroare de rețea sau 5xx mai încercăm de 2 ori, după 2 s și după 6 s (ca fetchRetry() de pe web). */
+    private suspend fun getWithRetry(url: String, waits: List<Long> = listOf(2000, 6000)): String {
+        var i = 0
+        while (true) {
+            val conn = URL(url).openConnection() as HttpURLConnection
+            conn.connectTimeout = 15000
+            conn.readTimeout = 15000
+            try {
+                val code = conn.responseCode
+                if (code == 200) return conn.inputStream.bufferedReader().use { it.readText() }
+                if (code < 500 || i >= waits.size) throw HttpError(code)
+            } catch (e: java.io.IOException) {
+                if (i >= waits.size) throw e
+            } finally {
+                conn.disconnect()
             }
-            ForecastCache(System.currentTimeMillis(), bySite).also { cacheFile.writeText(json.encodeToString(it)) }
-        } finally {
-            conn.disconnect()
+            delay(waits[i++])
         }
     }
 }

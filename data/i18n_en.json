@@ -106,7 +106,6 @@
   "Strat la altitudine medie: umbrește solul, termice slabe.": "Mid-level layer: shades the ground, weak thermals.",
   "Nori înalți subțiri: adesea anunță un front.": "Thin high clouds: often ahead of a front.",
   "Văl înalt: slăbește termicele.": "High veil: weakens thermals.",
-  "Serverul de prognoză a răspuns {s}": "The forecast server answered {s}",
   "Ești offline.": "You are offline.",
   "Eroare de rețea.": "Network error.",
   "Azi": "Today",
@@ -294,5 +293,14 @@
   "Avertizare": "Warning",
   "cu avertizare": "with a warning",
   "Versiunea {v}": "Version {v}",
-  "fără direcții": "no directions"
+  "fără direcții": "no directions",
+  "O zi are cel mult 24 de ore în aer.": "A day has at most 24 hours of airtime.",
+  "Pragurile trebuie să fie numere pozitive.": "Thresholds must be positive numbers.",
+  "„Calm sub” trebuie să fie mai mic decât „Bun până la”.": "“Calm below” must be lower than “Good up to”.",
+  "„Bun până la” nu poate depăși „Marginal până la”.": "“Good up to” cannot exceed “Marginal up to”.",
+  "„Rafale maxime” nu poate fi sub „Bun până la”.": "“Max gusts” cannot be below “Good up to”.",
+  "Serviciul de prognoză nu răspunde momentan.": "The forecast service is not responding right now.",
+  "Serviciul de prognoză a refuzat cererea (cod {s}).": "The forecast service refused the request (code {s}).",
+  "Serviciul de prognoză nu a răspuns la timp.": "The forecast service did not answer in time.",
+  "Ai modificări care nu au ajuns în Drive, așa că nu te-am deconectat. Exportă jurnalul în Excel sau încearcă din nou când ai internet.": "Some changes have not reached Drive yet, so you were not signed out. Export the log to Excel or try again when you are online."
 }

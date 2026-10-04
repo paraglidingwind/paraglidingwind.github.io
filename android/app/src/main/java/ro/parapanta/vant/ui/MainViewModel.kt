@@ -84,7 +84,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 val fc = repo.fetch(sites)
                 _state.update { it.copy(fc = fc, loading = false) }
             } catch (e: Exception) {
-                val msg = if (e is java.net.UnknownHostException) "Ești offline." else (e.message ?: "Eroare de rețea.")
+                // BUG-05: mesaje care spun ce s-a întâmplat (ca pe web), cu punct la final.
+                val msg = when {
+                    e is java.net.UnknownHostException -> "Ești offline."
+                    e is java.net.SocketTimeoutException -> "Serviciul de prognoză nu a răspuns la timp."
+                    e is ro.parapanta.vant.data.HttpError && e.code >= 500 -> "Serviciul de prognoză nu răspunde momentan."
+                    e is ro.parapanta.vant.data.HttpError -> "Serviciul de prognoză a refuzat cererea (cod ${e.code})."
+                    else -> "Eroare de rețea."
+                }
                 _state.update { it.copy(loading = false, error = msg) }
             }
         }
@@ -138,6 +145,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setThresholds(t: Thresholds) {
         val fixed = if (t.from > t.to) t.copy(from = t.to, to = t.from) else t
+        if (ro.parapanta.vant.model.validateThresholds(fixed) != null) return
         repo.saveThresholds(fixed)
         _state.update { it.copy(th = fixed) }
     }

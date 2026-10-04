@@ -83,4 +83,17 @@ class VectorsTest {
             assertEquals(c.s("in"), out?.let { it[0] to it[1] }, parseCoords(c.s("in")!!))
         }
     }
+
+    @Test fun validate() {
+        val v = load("validate")
+        val today = v.s("today")!!
+        for (e in v["flight"]!!.jsonArray) {
+            val c = e.jsonObject
+            assertEquals(c.toString(), c.s("err"), validateFlight(c.s("site")!!, c.s("date"), c.i("h")!!, c.i("m")!!, today))
+        }
+        for (e in v["settings"]!!.jsonArray) {
+            val c = e.jsonObject
+            assertEquals(c.toString(), c.s("err"), validateThresholds(thresholds(c["s"]!!.jsonObject)))
+        }
+    }
 }
