@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.first
 import ro.parapanta.vant.model.Status
+import ro.parapanta.vant.model.knownDirs
 import ro.parapanta.vant.model.rate
 import ro.parapanta.vant.model.sky
 import java.time.LocalDate
@@ -153,6 +154,9 @@ fun Board(state: UiState, onCell: (Int, String) -> Unit, onSite: (Int) -> Unit, 
                             site.alt?.let { Text("$it m", color = p.muted, fontSize = 11.5.sp, fontFamily = Condensed) }
                             if (state.station(site) != null) LiveBadge()
                         }
+                        // ONB-07: fără direcții în ParaglidingEarth; verdictul e cel mult marginal până le setezi.
+                        if (!site.knownDirs()) Text("fără direcții", Modifier.clip(RoundedCornerShape(4.dp)).background(p.maybeBg).padding(horizontal = 4.dp),
+                            color = p.maybe, fontSize = 10.5.sp, fontWeight = FontWeight.Bold, lineHeight = 13.sp)
                     }
                 }
                 Box(Modifier.width(1.dp).fillMaxHeight().background(p.line))
@@ -160,7 +164,7 @@ fun Board(state: UiState, onCell: (Int, String) -> Unit, onSite: (Int) -> Unit, 
                     hours.forEach { h ->
                         val w = state.hour(site, date, h)
                         val r = state.rateAt(site, date, h)
-                        HourCell(w?.ws, w?.wd, w?.wg, w?.pr, w?.let { sky(it).icon }, r.status, state.th.rain) { if (r.status != Status.NA) onCell(si, h) }
+                        HourCell(w?.ws, w?.wd, w?.wg, w?.pr, w?.let { sky(it).icon }, r.status, r.warn, state.th.rain) { if (r.status != Status.NA) onCell(si, h) }
                     }
                 }
             }
@@ -176,25 +180,33 @@ fun LiveBadge() {
         color = p.accentInk, fontSize = 9.5.sp, fontWeight = FontWeight.Bold, letterSpacing = .5.sp, lineHeight = 13.sp)
 }
 
+/** Colțul marcat al unei celule cu avertizare (vânt la altitudine, furtună, fără direcții). */
 @Composable
-private fun HourCell(ws: Double?, wd: Double?, wg: Double?, pr: Double?, skyIcon: String?, st: Status, rainMax: Double, onClick: () -> Unit) {
+fun WarnCorner(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier.size(12.dp)) {
+        drawPath(Path().apply { moveTo(0f, 0f); lineTo(size.width, 0f); lineTo(0f, size.height); close() }, color)
+    }
+}
+
+@Composable
+private fun HourCell(ws: Double?, wd: Double?, wg: Double?, pr: Double?, skyIcon: String?, st: Status, warn: List<String>, rainMax: Double, onClick: () -> Unit) {
     val p = LocalPalette.current
     val fg = p.fg(st)
-    Column(
-        Modifier.width(CELL_W).fillMaxHeight().padding(start = 1.dp).background(p.bgOf(st)).clickable(onClick = onClick),
-        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center
-    ) {
-        if (ws == null || wd == null) {
-            Text("–", color = p.muted)
-            return@Column
+    Box(Modifier.width(CELL_W).fillMaxHeight().padding(start = 1.dp).background(p.bgOf(st)).clickable(onClick = onClick)) {
+        Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            if (ws == null || wd == null) {
+                Text("–", color = p.muted)
+                return@Column
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                skyIcon?.let { SkyIcon(it, Modifier.size(19.dp)) }
+                WindArrow(wd, fg, Modifier.size(17.dp))
+            }
+            Text(ws.roundToInt().toString(), color = fg, fontSize = 17.sp, fontWeight = FontWeight.Bold, fontFamily = Condensed, lineHeight = 18.sp)
+            if (pr != null && pr > rainMax) Text("${"%.1f".format(Locale.US, pr)}mm", color = fg, fontSize = 10.sp, lineHeight = 11.sp, fontFamily = Condensed)
+            else Text(wg?.roundToInt()?.toString() ?: "", color = fg, fontSize = 11.5.sp, lineHeight = 12.sp, fontFamily = Condensed)
         }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-            skyIcon?.let { SkyIcon(it, Modifier.size(19.dp)) }
-            WindArrow(wd, fg, Modifier.size(17.dp))
-        }
-        Text(ws.roundToInt().toString(), color = fg, fontSize = 17.sp, fontWeight = FontWeight.Bold, fontFamily = Condensed, lineHeight = 18.sp)
-        if (pr != null && pr > rainMax) Text("${"%.1f".format(Locale.US, pr)}mm", color = fg, fontSize = 10.sp, lineHeight = 11.sp, fontFamily = Condensed)
-        else Text(wg?.roundToInt()?.toString() ?: "", color = fg.copy(alpha = .85f), fontSize = 11.5.sp, lineHeight = 12.sp, fontFamily = Condensed)
+        if (warn.isNotEmpty()) WarnCorner(fg, Modifier.align(Alignment.TopStart))
     }
 }
 
@@ -230,12 +242,16 @@ fun Legend() {
     val p = LocalPalette.current
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            listOf(Status.GO to "Favorabil", Status.MAYBE to "Marginal", Status.NO to "Nu", Status.CALM to "Calm", Status.NIGHT to "Noapte").forEach { (s, t) ->
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Box(Modifier.size(10.dp).clip(RoundedCornerShape(3.dp)).background(p.dot(s)))
-                    Text(t, color = p.muted, fontSize = 12.5.sp, fontFamily = Condensed)
+            listOf(Status.GO to "Favorabil", Status.MAYBE to "Marginal", Status.NO to "Nu", Status.CALM to "Calm").forEach { (s, t) -> LegendKey(s, t) }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.padding(top = 6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                Box(Modifier.size(16.dp).clip(RoundedCornerShape(4.dp)).background(p.surface).border(1.dp, p.line, RoundedCornerShape(4.dp))) {
+                    WarnCorner(p.ink, Modifier.size(9.dp))
                 }
+                Text("Avertizare", color = p.muted, fontSize = 12.5.sp, fontFamily = Condensed)
             }
+            LegendKey(Status.NIGHT, "Noapte")
         }
         Text("Pictograma: cerul și tipul de nori · săgeata: încotro bate vântul · cifra mare: vânt la 10 m, mică: rafale (m/s)",
             color = p.muted, fontSize = 12.5.sp, fontFamily = Condensed, modifier = Modifier.padding(top = 4.dp))
@@ -249,6 +265,16 @@ fun Disclaimer(modifier: Modifier = Modifier) {
     val p = LocalPalette.current
     Text("Prognoză de model, nu o garanție. Decizia îți aparține, la decolare.", color = p.muted, fontSize = 12.5.sp, fontFamily = Condensed,
         modifier = modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(p.sunk).padding(horizontal = 10.dp, vertical = 7.dp))
+}
+
+@Composable
+private fun LegendKey(s: Status, label: String) {
+    val p = LocalPalette.current
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        Box(Modifier.size(16.dp).clip(RoundedCornerShape(4.dp)).background(p.bgOf(s))
+            .border(1.dp, if (s == Status.NIGHT) p.line else p.fg(s), RoundedCornerShape(4.dp)))
+        Text(label, color = p.muted, fontSize = 12.5.sp, fontFamily = Condensed)
+    }
 }
 
 @Composable
