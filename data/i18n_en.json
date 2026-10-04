@@ -290,5 +290,9 @@
   "Prognoză de model, nu o garanție. Decizia îți aparține, la decolare.": "Model forecast, not a guarantee. The decision is yours, at takeoff.",
   "fără direcții setate": "no wind directions set",
   "bune: {d}": "good: {d}",
-  "marginale: {d}": "marginal: {d}"
+  "marginale: {d}": "marginal: {d}",
+  "Avertizare": "Warning",
+  "cu avertizare": "with a warning",
+  "Versiunea {v}": "Version {v}",
+  "fără direcții": "no directions"
 }

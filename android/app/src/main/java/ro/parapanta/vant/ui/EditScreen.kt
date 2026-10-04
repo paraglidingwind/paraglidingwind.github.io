@@ -50,6 +50,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -139,7 +140,13 @@ fun EditScreen(vm: MainViewModel, state: UiState, onClose: () -> Unit) {
 
             item { ManualForm(onAdd = { vm.add(it); toast("${it.n} a fost adăugat") }) }
             item { ThresholdsForm(state.th, vm::setThresholds) }
-            item { Spacer(Modifier.height(40.dp)) }
+            item {
+                // FIA-03: versiunea, ca o problemă raportată să poată fi legată de cod.
+                val ctx = LocalContext.current
+                val v = remember { runCatching { ctx.packageManager.getPackageInfo(ctx.packageName, 0).let { "${it.versionName} (${it.longVersionCode})" } }.getOrDefault("") }
+                Text("Versiunea $v", color = p.muted, fontSize = 12.sp, modifier = Modifier.padding(top = 24.dp))
+                Spacer(Modifier.height(40.dp))
+            }
         }
     }
 }
