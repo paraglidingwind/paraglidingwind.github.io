@@ -158,3 +158,38 @@ function syncMerge(a, b){
   for (const [id, u] of Object.entries(tb)){ const f = by.get(id); if (f && (f.u || 0) <= u) by.delete(id); }
   return {flights: [...by.values()], tomb: tb};
 }
+
+/* ---------- rețea ---------- */
+/* FIA-02: fiecare încercare are 15 s; la o eroare de rețea sau 5xx mai încercăm de 2 ori, după 2 s și după 6 s. */
+async function fetchRetry(url, waits = [2000, 6000], get = (u, o) => fetch(u, o)){
+  for (let i = 0; ; i++){
+    const ac = new AbortController(), timer = setTimeout(() => ac.abort(), 15000);
+    try {
+      const r = await get(url, {signal: ac.signal});
+      if (r.status < 500 || i >= waits.length) return r;
+    } catch (e) {
+      if (i >= waits.length) throw e;
+    } finally { clearTimeout(timer); }
+    await new Promise(ok => setTimeout(ok, waits[i]));
+  }
+}
+
+/* ---------- validări (aceleași în Flight.kt / Model.kt) ---------- */
+/* O zi de zbor: locul, data (nu în viitor), timpul în aer (cel mult 24 h). */
+function validateFlight(site, date, h, m, today){
+  if (!String(site || '').trim()) return t('Alege sau scrie locația.');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date || '')) return t('Alege data.');
+  if (date > today) return t('Data nu poate fi în viitor.');
+  if (h < 0 || m < 0) return t('Orele și minutele nu pot fi negative.');
+  if (h * 60 + m <= 0) return t('Scrie cât timp ai stat în aer.');
+  if (h * 60 + m > 24 * 60) return t('O zi are cel mult 24 de ore în aer.');
+  return null;
+}
+/* Pragurile: pozitive și în ordine (calm < bun ≤ marginal, rafalele maxime cel puțin cât vântul bun). */
+function validateSettings(s){
+  if (['good', 'marg', 'calm', 'gust', 'spread', 'rain'].some(k => !(s[k] >= 0))) return t('Pragurile trebuie să fie numere pozitive.');
+  if (s.calm >= s.good) return t('„Calm sub” trebuie să fie mai mic decât „Bun până la”.');
+  if (s.good > s.marg) return t('„Bun până la” nu poate depăși „Marginal până la”.');
+  if (s.gust < s.good) return t('„Rafale maxime” nu poate fi sub „Bun până la”.');
+  return null;
+}

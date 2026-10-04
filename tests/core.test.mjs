@@ -55,3 +55,23 @@ test('syncMerge(): ultima modificare câștigă, ștergerile rămân șterse, du
 test('distKm(): Cluj–București ≈ 324 km', () => {
   assert.ok(Math.abs(core.distKm(46.77, 23.59, 44.43, 26.1) - 324) < 3);
 });
+
+test('validări: cazurile comune (zi de zbor, praguri)', () => {
+  const v = json('data/test_vectors/validate.json');
+  for (const c of v.flight) assert.equal(core.validateFlight(c.site, c.date, c.h, c.m, v.today), c.err, JSON.stringify(c));
+  for (const c of v.settings) assert.equal(core.validateSettings(c.s), c.err, JSON.stringify(c.s));
+});
+
+test('fetchRetry(): reîncearcă după 5xx și după erori de rețea, apoi renunță', async () => {
+  const seq = (...xs) => { let i = 0; const calls = []; return {calls, get: async url => { calls.push(url); const x = xs[i++]; if (x instanceof Error) throw x; return {status: x, ok: x < 400}; }}; };
+  let f = seq(503, 200);
+  assert.equal((await core.fetchRetry('u', [1, 1], f.get)).status, 200); assert.equal(f.calls.length, 2);
+  f = seq(new TypeError('rețea'), 200);
+  assert.equal((await core.fetchRetry('u', [1, 1], f.get)).status, 200);
+  f = seq(503, 503, 503);
+  assert.equal((await core.fetchRetry('u', [1, 1], f.get)).status, 503, 'după ultima încercare întoarce răspunsul'); assert.equal(f.calls.length, 3);
+  f = seq(404);
+  assert.equal((await core.fetchRetry('u', [1, 1], f.get)).status, 404); assert.equal(f.calls.length, 1, 'un 4xx nu se reîncearcă');
+  f = seq(new TypeError('a'), new TypeError('b'), new TypeError('c'));
+  await assert.rejects(core.fetchRetry('u', [1, 1], f.get));
+});

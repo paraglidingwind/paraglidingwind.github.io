@@ -40,5 +40,6 @@ fun validateFlight(site: String, date: String?, h: Int, m: Int, today: String): 
     date > today -> "Data nu poate fi în viitor."
     h < 0 || m < 0 -> "Orele și minutele nu pot fi negative."
     h * 60 + m <= 0 -> "Scrie cât timp ai stat în aer."
+    h * 60 + m > 24 * 60 -> "O zi are cel mult 24 de ore în aer."
     else -> null
 }

@@ -56,3 +56,12 @@ data class SiteForecast(
 data class ForecastCache(val at: Long, val bySite: Map<String, SiteForecast>)
 
 fun Double.f1(): String = String.format(Locale.US, "%.1f", this)
+
+/** Pragurile: pozitive și în ordine (calm < bun ≤ marginal, rafalele maxime cel puțin cât vântul bun). Ca validateSettings() din core.js. */
+fun validateThresholds(t: Thresholds): String? = when {
+    listOf(t.good, t.marg, t.calm, t.gust, t.spread, t.rain).any { !(it >= 0.0) } -> "Pragurile trebuie să fie numere pozitive."
+    t.calm >= t.good -> "„Calm sub” trebuie să fie mai mic decât „Bun până la”."
+    t.good > t.marg -> "„Bun până la” nu poate depăși „Marginal până la”."
+    t.gust < t.good -> "„Rafale maxime” nu poate fi sub „Bun până la”."
+    else -> null
+}
