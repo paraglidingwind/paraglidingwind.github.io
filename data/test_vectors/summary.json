@@ -1,0 +1,274 @@
+{
+ "_": "Cazuri comune pentru summarize(): starea pe ore, starea zilei și textul (în română).",
+ "settings": {
+  "good": 5,
+  "marg": 7,
+  "calm": 1,
+  "gust": 9,
+  "spread": 4,
+  "rain": 0.2,
+  "from": 8,
+  "to": 20
+ },
+ "sites": {
+  "liteni": [
+   0,
+   1,
+   2,
+   2,
+   1,
+   0,
+   0,
+   0
+  ]
+ },
+ "cases": [
+  {
+   "name": "cea mai lungă fereastră bună",
+   "site": "liteni",
+   "hours": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "14"
+   ],
+   "w": [
+    {
+     "ws": 2,
+     "wd": 270,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 90,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 3,
+     "wd": 95,
+     "wg": 4,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 270,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 90,
+     "wg": 3,
+     "pr": 0.0
+    }
+   ],
+   "sts": [
+    "no",
+    "go",
+    "go",
+    "no",
+    "go"
+   ],
+   "st": "go",
+   "text": "Bun de zbor 11–12 (2 ore) · vânt din E 2–3 m/s"
+  },
+  {
+   "name": "o singură oră",
+   "site": "liteni",
+   "hours": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "14"
+   ],
+   "w": [
+    {
+     "ws": 2,
+     "wd": 270,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 270,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 135,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 270,
+     "wg": 3,
+     "pr": 0.0
+    },
+    null
+   ],
+   "st": "go",
+   "text": "Bun de zbor ora 12 (1 oră) · vânt din SE 2 m/s"
+  },
+  {
+   "name": "doar marginal",
+   "site": "liteni",
+   "hours": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "14"
+   ],
+   "w": [
+    {
+     "ws": 3,
+     "wd": 180,
+     "wg": 4,
+     "pr": 0.0
+    },
+    {
+     "ws": 3,
+     "wd": 180,
+     "wg": 4,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 270,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 270,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 270,
+     "wg": 3,
+     "pr": 0.0
+    }
+   ],
+   "st": "maybe",
+   "text": "Cel mult marginal: 10–11 · vânt din S 3 m/s"
+  },
+  {
+   "name": "doar calm",
+   "site": "liteni",
+   "hours": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "14"
+   ],
+   "w": [
+    {
+     "ws": 2,
+     "wd": 270,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 270,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 0.5,
+     "wd": 270,
+     "wg": 1.5,
+     "pr": 0.0
+    },
+    {
+     "ws": 0.5,
+     "wd": 270,
+     "wg": 1.5,
+     "pr": 0.0
+    },
+    {
+     "ws": 0.5,
+     "wd": 270,
+     "wg": 1.5,
+     "pr": 0.0
+    }
+   ],
+   "st": "calm",
+   "text": "Nicio oră bună · calm (sub 1 m/s) 12–14"
+  },
+  {
+   "name": "nimic",
+   "site": "liteni",
+   "hours": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "14"
+   ],
+   "w": [
+    {
+     "ws": 2,
+     "wd": 270,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 270,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 270,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 270,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 270,
+     "wg": 3,
+     "pr": 0.0
+    }
+   ],
+   "st": "no",
+   "text": "Nicio oră bună de zbor"
+  },
+  {
+   "name": "fără date",
+   "site": "liteni",
+   "hours": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "14"
+   ],
+   "w": [
+    null,
+    null,
+    null,
+    null,
+    null
+   ],
+   "st": "na",
+   "text": "Fără date"
+  }
+ ]
+}
