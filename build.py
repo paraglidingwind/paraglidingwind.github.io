@@ -38,3 +38,25 @@ print("android SkyIcons.kt + assets")
 for src, dst in (("world_sites.json", "sites.json"), ("holfuy_world.json", "holfuy.json")):
     (root / "docs" / dst).write_text((root / "data" / src).read_text())
 print("docs/sites.json + docs/holfuy.json")
+
+# ONB-05: aceleași decolări împărțite pe țări (România ≈ 16 KB în loc de 1 MB) + un index cu numărul și chenarul fiecărei țări.
+# Codurile stricate din ParaglidingEarth (ex. „C ”, gol) ajung în „XX”.
+import re, shutil
+by = {}
+for x in json.loads((root / "data/world_sites.json").read_text()):
+    cc = x.get("c", "").strip().upper()
+    by.setdefault(cc if re.fullmatch(r"[A-Z]{2}", cc) else "XX", []).append({k: x[k] for k in ("n", "lat", "lon", "alt", "o") if k in x})
+out = root / "docs/sites"
+shutil.rmtree(out, ignore_errors=True); out.mkdir()
+# Index: pentru fiecare țară, câte decolări are în fiecare celulă de 2°×2° („46,22” = lat 46–48, lon 22–24).
+# Celulele (nu chenarul țării) evită teritoriile îndepărtate: Franța nu „atinge” Clujul prin Réunion sau Noua Caledonie.
+index = {}
+for cc, lst in sorted(by.items()):
+    (out / f"{cc}.json").write_text(json.dumps(lst, ensure_ascii=False, separators=(",", ":")))
+    cells = {}
+    for x in lst:
+        k = f"{int(x['lat'] // 2 * 2)},{int(x['lon'] // 2 * 2)}"
+        cells[k] = cells.get(k, 0) + 1
+    index[cc] = {"n": len(lst), "c": cells}
+(out / "index.json").write_text(json.dumps(index, separators=(",", ":")))
+print(f"docs/sites/: {len(by)} țări, România {len(by.get('RO', []))} decolări")

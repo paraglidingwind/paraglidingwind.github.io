@@ -66,6 +66,8 @@ import ro.parapanta.vant.model.distKm
 import kotlin.math.roundToInt
 import ro.parapanta.vant.model.Site
 import ro.parapanta.vant.model.Thresholds
+import ro.parapanta.vant.model.profileOf
+import ro.parapanta.vant.model.PROFILES
 import ro.parapanta.vant.model.validateThresholds
 import ro.parapanta.vant.model.key
 import ro.parapanta.vant.model.parseCoords
@@ -238,7 +240,21 @@ private fun ManualForm(onAdd: (Site) -> Unit) {
 @Composable
 private fun ThresholdsForm(th: Thresholds, onChange: (Thresholds) -> Unit) {
     Column {
-        Section("Praguri")
+        Section("Limitele tale")
+        // ONB-02: un profil completează toate pragurile; câmpurile de mai jos rămân pentru „personalizat”.
+        val cur = profileOf(th)
+        PROFILES.forEach { (name, p) ->
+            val sel = name == cur
+            OutlinedButton(onClick = { onChange(p.copy(from = th.from, to = th.to)) }, Modifier.fillMaxWidth().padding(bottom = 6.dp),
+                border = androidx.compose.foundation.BorderStroke(if (sel) 2.dp else 1.dp, if (sel) LocalPalette.current.accent else LocalPalette.current.line)) {
+                Column(Modifier.fillMaxWidth()) {
+                    Text(name, fontWeight = FontWeight.Bold, color = LocalPalette.current.ink)
+                    Text("Vânt bun până la ${p.good.trim()} m/s, marginal până la ${p.marg.trim()}, rafale până la ${p.gust.trim()}",
+                        color = LocalPalette.current.muted, fontSize = 13.sp)
+                }
+            }
+        }
+        Text(if (cur == null) "Personalizat:" else "Sau personalizează:", color = LocalPalette.current.muted, fontSize = 13.sp, modifier = Modifier.padding(top = 6.dp, bottom = 6.dp))
         val fields: List<Triple<String, Double, (Double) -> Thresholds>> = listOf(
             Triple("Bun până la (m/s)", th.good) { v -> th.copy(good = v) },
             Triple("Marginal până la", th.marg) { v -> th.copy(marg = v) },
@@ -266,7 +282,6 @@ private fun ThresholdsForm(th: Thresholds, onChange: (Thresholds) -> Unit) {
             }
         }
         err?.let { Text(it, color = LocalPalette.current.no, fontSize = 13.sp, modifier = Modifier.padding(bottom = 8.dp)) }
-        OutlinedButton(onClick = { err = null; onChange(Thresholds()) }) { Text("Praguri implicite") }
     }
 }
 

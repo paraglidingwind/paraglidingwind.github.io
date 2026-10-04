@@ -57,6 +57,16 @@ data class ForecastCache(val at: Long, val bySite: Map<String, SiteForecast>)
 
 fun Double.f1(): String = String.format(Locale.US, "%.1f", this)
 
+/** ONB-02: limitele pentru fiecare tip de pilot; aceleași ca PROFILES din core.js. Orele afișate nu țin de profil. */
+val PROFILES: Map<String, Thresholds> = linkedMapOf(
+    "Elev / începător" to Thresholds(good = 4.0, marg = 5.0, calm = 1.0, gust = 6.0, spread = 3.0, rain = 0.2),
+    "Pilot" to Thresholds(good = 5.0, marg = 7.0, calm = 1.0, gust = 9.0, spread = 4.0, rain = 0.2),
+    "Avansat" to Thresholds(good = 7.0, marg = 9.0, calm = 1.0, gust = 11.0, spread = 5.0, rain = 0.2),
+)
+
+/** Profilul ale cărui praguri sunt exact cele date (orele nu contează), sau null = personalizat. */
+fun profileOf(t: Thresholds): String? = PROFILES.entries.firstOrNull { (_, p) -> p.copy(from = t.from, to = t.to) == t }?.key
+
 /** Pragurile: pozitive și în ordine (calm < bun ≤ marginal, rafalele maxime cel puțin cât vântul bun). Ca validateSettings() din core.js. */
 fun validateThresholds(t: Thresholds): String? = when {
     listOf(t.good, t.marg, t.calm, t.gust, t.spread, t.rain).any { !(it >= 0.0) } -> "Pragurile trebuie să fie numere pozitive."

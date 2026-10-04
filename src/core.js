@@ -193,3 +193,32 @@ function validateSettings(s){
   if (s.gust < s.good) return t('„Rafale maxime” nu poate fi sub „Bun până la”.');
   return null;
 }
+
+/* ---------- profiluri și zone (ONB-02, ONB-05) ---------- */
+/* Limitele pentru fiecare tip de pilot; aceleași în Model.kt. Orele afișate (from/to) nu țin de profil. */
+const PROFILES = {
+  elev:    {good:4, marg:5, calm:1, gust:6,  spread:3, rain:0.2},
+  pilot:   {good:5, marg:7, calm:1, gust:9,  spread:4, rain:0.2},
+  avansat: {good:7, marg:9, calm:1, gust:11, spread:5, rain:0.2},
+};
+/* Distanța de la un punct la un dreptunghi [latMin, lonMin, latMax, lonMax]; 0 = înăuntru. */
+function bboxKm(lat, lon, [a, b, c, d]){
+  return distKm(lat, lon, Math.min(c, Math.max(a, lat)), Math.min(d, Math.max(b, lon)));
+}
+/* Celulele de 2°×2° din docs/sites/index.json: „46,22” = lat 46–48, lon 22–24. */
+const cellBox = k => { const [a, b] = k.split(',').map(Number); return [a, b, a + 2, b + 2]; };
+const cellOf = (lat, lon) => `${Math.floor(lat / 2) * 2},${Math.floor(lon / 2) * 2}`;
+/* Țările care pot avea decolări la cel mult km de punct: doar fișierele lor se descarcă. */
+function countriesNear(index, lat, lon, km){
+  return Object.keys(index).filter(cc => Object.keys(index[cc].c).some(k => bboxKm(lat, lon, cellBox(k)) <= km));
+}
+/* Țara probabilă: cea cu cele mai multe decolări în celula fusului orar; altfel regiunea din limba telefonului (ro-RO → RO). */
+function guessCountry(index, lang, point){
+  if (point){
+    const k = cellOf(point[0], point[1]);
+    const best = Object.keys(index).filter(cc => cc !== 'XX' && index[cc].c[k]).sort((x, y) => index[y].c[k] - index[x].c[k])[0];
+    if (best) return best;
+  }
+  const r = (String(lang || '').split(/[-_]/)[1] || '').toUpperCase();
+  return index[r] ? r : null;
+}
