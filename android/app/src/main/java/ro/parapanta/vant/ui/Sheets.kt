@@ -41,7 +41,8 @@ import ro.parapanta.vant.model.DIRS
 import ro.parapanta.vant.model.HolfuyLink
 import ro.parapanta.vant.model.Site
 import ro.parapanta.vant.model.f1
-import ro.parapanta.vant.model.rate
+import ro.parapanta.vant.model.knownDirs
+import ro.parapanta.vant.model.trim
 import ro.parapanta.vant.model.sectorOf
 import ro.parapanta.vant.model.sky
 import java.util.Locale
@@ -68,7 +69,8 @@ fun CellSheet(state: UiState, si: Int, h: String, onDismiss: () -> Unit) {
     val site = state.sites.getOrNull(si) ?: return onDismiss()
     val date = state.dates.getOrNull(state.dayIdx) ?: return onDismiss()
     val w = state.hour(site, date, h) ?: return onDismiss()
-    val r = rate(site, w, state.th)
+    val r = state.rateAt(site, date, h)
+    val sun = state.sun(site, date)
     Sheet("${site.n} · $h:00", onDismiss) {
         Row(
             Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(p.bgOf(r.status)).padding(horizontal = 12.dp, vertical = 10.dp),
@@ -78,7 +80,13 @@ fun CellSheet(state: UiState, si: Int, h: String, onDismiss: () -> Unit) {
             Text(r.status.label, color = p.fg(r.status), fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
         }
         Column(Modifier.padding(top = 8.dp, start = 4.dp)) {
-            r.reasons.forEach { Text("• $it", color = p.ink, fontSize = 15.sp) }
+            r.reasons.forEach {
+                // Avertizările (vânt la altitudine, furtună, fără direcții) au marcajul din colțul celulei.
+                Row {
+                    Text(if (it in r.warnings) "◤ " else "• ", color = if (it in r.warnings) p.maybe else p.ink, fontSize = 15.sp)
+                    Text(it, color = p.ink, fontSize = 15.sp)
+                }
+            }
         }
         val k = sky(w)
         Text("CER", color = p.muted, fontWeight = FontWeight.Bold, fontFamily = Display, letterSpacing = .8.sp,
@@ -92,24 +100,32 @@ fun CellSheet(state: UiState, si: Int, h: String, onDismiss: () -> Unit) {
         }
         k.type?.let { CLOUD_NOTES[it] }?.let { Text(it, color = p.muted, fontSize = 14.sp, modifier = Modifier.padding(top = 6.dp)) }
         Spacer(Modifier.height(12.dp))
-        val good = site.o.mapIndexedNotNull { i, v -> when (v) { 2 -> DIRS[i]; 1 -> DIRS[i].lowercase(); else -> null } }.joinToString(" ")
         listOf(
             "Vânt la 10 m" to "${w.ws?.f1()} m/s din ${w.wd?.let(::dir)}",
             "Rafale" to (w.wg?.let { "${it.f1()} m/s" } ?: "–"),
             "Vânt la ~1500 m" to (w.w8?.let { s -> "${s.f1()} m/s din ${w.d8?.let(::dir) ?: "–"}" } ?: "–"),
             "Nori" to ((w.cc?.let { "${it.roundToInt()} %" } ?: "–") + (w.lo?.let { " (jos ${it.roundToInt()} · mediu ${w.mi?.roundToInt()} · sus ${w.hi?.roundToInt()})" } ?: "")),
             "Ploaie" to (w.pr?.let { "${it.f1()} mm/h" } ?: "–"),
-            "CAPE" to (w.cape?.let { "${it.roundToInt()} J/kg" + if (it > 800) " · risc de dezvoltări" else "" } ?: "–"),
+            "Instabilitate" to ((w.cape?.let { "CAPE ${it.roundToInt()} J/kg" } ?: "–") + (w.li?.let { " · LI ${(Math.round(it * 10) / 10.0).trim().replace('-', '−')}" } ?: "")),
             "Temperatură" to (w.tt?.let { "${it.f1()} °C" } ?: "–"),
-            "Decolare" to (good.ifEmpty { "–" } + (site.alt?.let { " · $it m" } ?: "")),
+            "Soare" to (sun?.let { (r, s) -> "răsărit $r · apus $s" } ?: "–"),
+            "Decolare" to (dirsText(site) + (site.alt?.let { " · $it m" } ?: "")),
         ).forEach { (k, v) ->
             Row(Modifier.padding(vertical = 3.dp)) {
                 Text(k, color = p.muted, modifier = Modifier.width(130.dp), fontSize = 15.sp)
                 Text(v, color = p.ink, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
             }
         }
+        Disclaimer(Modifier.padding(top = 12.dp))
         Links(site)
     }
+}
+
+/** Direcțiile unei decolări, în cuvinte (ca dirsTxt() de pe web). */
+fun dirsText(site: Site): String {
+    fun of(v: Int) = site.o.mapIndexedNotNull { i, x -> if (x == v) DIRS[i] else null }.joinToString(", ")
+    if (!site.knownDirs()) return "fără direcții setate"
+    return listOfNotNull(of(2).takeIf { it.isNotEmpty() }?.let { "bune: $it" }, of(1).takeIf { it.isNotEmpty() }?.let { "marginale: $it" }).joinToString(" · ")
 }
 
 @Composable
@@ -144,7 +160,7 @@ fun SiteSheet(state: UiState, si: Int, onDay: (Int) -> Unit, onFlew: (String) ->
                 }
             }
             state.dates.forEachIndexed { i, d ->
-                val sm = summarize(site, hours, hours.map { state.hour(site, d, it) }, state.th)
+                val sm = state.summary(site, d)
                 if (i > 0) HorizontalDivider(color = p.line)
                 Row(
                     Modifier.fillMaxWidth().background(if (i == state.dayIdx) p.sunk else p.surface)

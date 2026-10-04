@@ -26,6 +26,7 @@ data class Hour(
     val ws: Double?, val wd: Double?, val wg: Double?, val pr: Double?,
     val cc: Double?, val cape: Double?, val tt: Double?, val w8: Double?, val d8: Double?,
     val code: Int? = null, val lo: Double? = null, val mi: Double? = null, val hi: Double? = null, val day: Int? = null,
+    val li: Double? = null,
 )
 
 @Serializable
@@ -34,13 +35,20 @@ data class SiteForecast(
     val ws: List<Double?>, val wd: List<Double?>, val wg: List<Double?>, val pr: List<Double?>,
     val cc: List<Double?>, val cape: List<Double?>, val tt: List<Double?>, val w8: List<Double?>, val d8: List<Double?>,
     val code: List<Int?> = emptyList(), val lo: List<Double?> = emptyList(), val mi: List<Double?> = emptyList(),
-    val hi: List<Double?> = emptyList(), val day: List<Int?> = emptyList(),
+    val hi: List<Double?> = emptyList(), val day: List<Int?> = emptyList(), val li: List<Double?> = emptyList(),
+    val sunrise: List<String> = emptyList(), val sunset: List<String> = emptyList(),
 ) {
     fun at(time: String): Hour? {
         val i = t.indexOf(time)
         if (i < 0) return null
         return Hour(ws[i], wd[i], wg[i], pr[i], cc[i], cape[i], tt[i], w8[i], d8[i],
-            code.getOrNull(i), lo.getOrNull(i), mi.getOrNull(i), hi.getOrNull(i), day.getOrNull(i))
+            code.getOrNull(i), lo.getOrNull(i), mi.getOrNull(i), hi.getOrNull(i), day.getOrNull(i), li.getOrNull(i))
+    }
+
+    /** Răsăritul și apusul din ziua [date] (AAAA-LL-ZZ), ca „07:35”. */
+    fun sun(date: String): Pair<String, String>? {
+        val i = sunrise.indexOfFirst { it.startsWith(date) }
+        return if (i < 0 || i >= sunset.size) null else sunrise[i].substring(11, 16) to sunset[i].substring(11, 16)
     }
 }
 

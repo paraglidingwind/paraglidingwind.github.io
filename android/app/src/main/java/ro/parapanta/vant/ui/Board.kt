@@ -159,7 +159,7 @@ fun Board(state: UiState, onCell: (Int, String) -> Unit, onSite: (Int) -> Unit, 
                 Row(Modifier.horizontalScroll(scroll)) {
                     hours.forEach { h ->
                         val w = state.hour(site, date, h)
-                        val r = rate(site, w, state.th)
+                        val r = state.rateAt(site, date, h)
                         HourCell(w?.ws, w?.wd, w?.wg, w?.pr, w?.let { sky(it).icon }, r.status, state.th.rain) { if (r.status != Status.NA) onCell(si, h) }
                     }
                 }
@@ -230,16 +230,25 @@ fun Legend() {
     val p = LocalPalette.current
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            listOf(Status.GO to "Bun", Status.MAYBE to "Marginal", Status.NO to "Nu", Status.CALM to "Calm").forEach { (s, t) ->
+            listOf(Status.GO to "Favorabil", Status.MAYBE to "Marginal", Status.NO to "Nu", Status.CALM to "Calm", Status.NIGHT to "Noapte").forEach { (s, t) ->
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Box(Modifier.size(10.dp).clip(RoundedCornerShape(3.dp)).background(p.fg(s)))
+                    Box(Modifier.size(10.dp).clip(RoundedCornerShape(3.dp)).background(p.dot(s)))
                     Text(t, color = p.muted, fontSize = 12.5.sp, fontFamily = Condensed)
                 }
             }
         }
         Text("Pictograma: cerul și tipul de nori · săgeata: încotro bate vântul · cifra mare: vânt la 10 m, mică: rafale (m/s)",
             color = p.muted, fontSize = 12.5.sp, fontFamily = Condensed, modifier = Modifier.padding(top = 4.dp))
+        Disclaimer(Modifier.padding(top = 8.dp))
     }
+}
+
+/** SIG-07: verdictul e o prognoză de model, nu o garanție. */
+@Composable
+fun Disclaimer(modifier: Modifier = Modifier) {
+    val p = LocalPalette.current
+    Text("Prognoză de model, nu o garanție. Decizia îți aparține, la decolare.", color = p.muted, fontSize = 12.5.sp, fontFamily = Condensed,
+        modifier = modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(p.sunk).padding(horizontal = 10.dp, vertical = 7.dp))
 }
 
 @Composable

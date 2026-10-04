@@ -1,5 +1,5 @@
 {
- "_": "Cazuri comune pentru summarize(): starea pe ore, starea zilei și textul (în română).",
+ "_": "Cazuri comune pentru summarize(): starea pe ore, starea zilei și textul (în română). extra = orele de după interval (pentru furtuni). Fereastra minimă: 2 ore (SIG-05).",
  "settings": {
   "good": 5,
   "marg": 7,
@@ -17,6 +17,16 @@
    2,
    2,
    1,
+   0,
+   0,
+   0
+  ],
+  "fara_directii": [
+   0,
+   0,
+   0,
+   0,
+   0,
    0,
    0,
    0
@@ -73,7 +83,7 @@
     "go"
    ],
    "st": "go",
-   "text": "Bun de zbor 11–12 (2 ore) · vânt din E 2–3 m/s"
+   "text": "Favorabil 11–12 (2 ore) · vânt din E 2–3 m/s"
   },
   {
    "name": "o singură oră",
@@ -112,8 +122,15 @@
     },
     null
    ],
-   "st": "go",
-   "text": "Bun de zbor ora 12 (1 oră) · vânt din SE 2 m/s"
+   "st": "maybe",
+   "text": "Doar ora 12, sub fereastra minimă de 2 ore",
+   "sts": [
+    "no",
+    "no",
+    "go",
+    "no",
+    "na"
+   ]
   },
   {
    "name": "doar marginal",
@@ -203,7 +220,7 @@
     }
    ],
    "st": "calm",
-   "text": "Nicio oră bună · calm (sub 1 m/s) 12–14"
+   "text": "Nicio fereastră bună · calm (sub 1 m/s) 12–14"
   },
   {
    "name": "nimic",
@@ -248,7 +265,7 @@
     }
    ],
    "st": "no",
-   "text": "Nicio oră bună de zbor"
+   "text": "Nicio fereastră bună"
   },
   {
    "name": "fără date",
@@ -269,6 +286,272 @@
    ],
    "st": "na",
    "text": "Fără date"
+  },
+  {
+   "name": "SIG-05: o oră bună izolată + marginal",
+   "site": "liteni",
+   "hours": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "14"
+   ],
+   "w": [
+    {
+     "ws": 2,
+     "wd": 90,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 3,
+     "wd": 180,
+     "wg": 4,
+     "pr": 0.0
+    },
+    {
+     "ws": 3,
+     "wd": 180,
+     "wg": 4,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 270,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 270,
+     "wg": 3,
+     "pr": 0.0
+    }
+   ],
+   "sts": [
+    "go",
+    "maybe",
+    "maybe",
+    "no",
+    "no"
+   ],
+   "st": "maybe",
+   "text": "Doar ora 10, sub fereastra minimă de 2 ore · marginal 11–12"
+  },
+  {
+   "name": "SIG-02: risc de supradezvoltare în rezumat",
+   "site": "liteni",
+   "hours": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "14"
+   ],
+   "w": [
+    {
+     "ws": 2,
+     "wd": 90,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 90,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 3,
+     "wd": 90,
+     "wg": 4,
+     "pr": 0.0
+    },
+    {
+     "ws": 3,
+     "wd": 90,
+     "wg": 4,
+     "pr": 0.0,
+     "cape": 1100,
+     "li": -3
+    },
+    {
+     "ws": 3,
+     "wd": 90,
+     "wg": 4,
+     "pr": 0.0,
+     "cape": 1400,
+     "li": -4
+    }
+   ],
+   "sts": [
+    "go",
+    "go",
+    "go",
+    "maybe",
+    "maybe"
+   ],
+   "st": "go",
+   "text": "Favorabil 10–12 (3 ore) · vânt din E 2–3 m/s · risc de supradezvoltare de la 13:00"
+  },
+  {
+   "name": "SIG-02: furtuna de după interval contează (extra)",
+   "site": "liteni",
+   "hours": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "14"
+   ],
+   "w": [
+    {
+     "ws": 2,
+     "wd": 90,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 90,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 90,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 90,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 90,
+     "wg": 3,
+     "pr": 0.0
+    }
+   ],
+   "extra": [
+    {
+     "ws": 6,
+     "wd": 230,
+     "code": 95
+    },
+    null
+   ],
+   "sts": [
+    "go",
+    "go",
+    "go",
+    "no",
+    "no"
+   ],
+   "st": "go",
+   "text": "Favorabil 10–12 (3 ore) · vânt din E 2 m/s · risc de supradezvoltare de la 13:00"
+  },
+  {
+   "name": "SIG-06: orele de noapte nu intră în fereastră",
+   "site": "liteni",
+   "hours": [
+    "17",
+    "18",
+    "19",
+    "20"
+   ],
+   "w": [
+    {
+     "ws": 2,
+     "wd": 90,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 90,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 90,
+     "wg": 3,
+     "pr": 0.0,
+     "day": 0
+    },
+    {
+     "ws": 2,
+     "wd": 90,
+     "wg": 3,
+     "pr": 0.0,
+     "day": 0
+    }
+   ],
+   "sts": [
+    "go",
+    "go",
+    "night",
+    "night"
+   ],
+   "st": "go",
+   "text": "Favorabil 17–18 (2 ore) · vânt din E 2 m/s"
+  },
+  {
+   "name": "ONB-07: fără direcții, niciodată „Favorabil”",
+   "site": "fara_directii",
+   "hours": [
+    "10",
+    "11",
+    "12",
+    "13",
+    "14"
+   ],
+   "w": [
+    {
+     "ws": 2,
+     "wd": 90,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 90,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 90,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 90,
+     "wg": 3,
+     "pr": 0.0
+    },
+    {
+     "ws": 2,
+     "wd": 90,
+     "wg": 3,
+     "pr": 0.0
+    }
+   ],
+   "sts": [
+    "maybe",
+    "maybe",
+    "maybe",
+    "maybe",
+    "maybe"
+   ],
+   "st": "maybe",
+   "text": "Cel mult marginal: 10–14 · vânt din E 2 m/s"
   }
  ]
 }

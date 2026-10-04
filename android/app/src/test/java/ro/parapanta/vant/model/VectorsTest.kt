@@ -26,7 +26,7 @@ class VectorsTest {
         if (e == null || e is JsonNull) return null
         val o = e.jsonObject
         return Hour(o.d("ws"), o.d("wd"), o.d("wg"), o.d("pr"), o.d("cc"), o.d("cape"), o.d("tt"), o.d("w8"), o.d("d8"),
-            o.i("code"), o.d("lo"), o.d("mi"), o.d("hi"), o.i("day"))
+            o.i("code"), o.d("lo"), o.d("mi"), o.d("hi"), o.i("day"), o.d("li"))
     }
 
     private fun thresholds(o: JsonObject?) = Thresholds(
@@ -46,8 +46,10 @@ class VectorsTest {
         val v = load("rate")
         for (e in v["cases"]!!.jsonArray) {
             val c = e.jsonObject
-            val r = rate(site(v, c), hour(c["w"]), thresholds(merged(v, c["settings"])))
+            val next = c["next"]?.jsonArray?.map { hour(it) } ?: emptyList()
+            val r = rate(site(v, c), hour(c["w"]), thresholds(merged(v, c["settings"])), next)
             assertEquals(c.s("name"), status(c.s("st")!!), r.status)
+            c["warn"]?.let { w -> assertEquals(c.s("name") + " (avertizări)", w.jsonArray.map { it.jsonPrimitive.content }.sorted(), r.warn.sorted()) }
         }
     }
 
@@ -56,7 +58,8 @@ class VectorsTest {
         for (e in v["cases"]!!.jsonArray) {
             val c = e.jsonObject
             val hours = c["hours"]!!.jsonArray.map { it.jsonPrimitive.content }
-            val r = summarize(site(v, c), hours, c["w"]!!.jsonArray.map { hour(it) }, thresholds(merged(v, c["settings"])))
+            val extra = c["extra"]?.jsonArray?.map { hour(it) } ?: emptyList()
+            val r = summarize(site(v, c), hours, c["w"]!!.jsonArray.map { hour(it) }, thresholds(merged(v, c["settings"])), extra)
             c["sts"]?.let { s -> assertEquals(c.s("name"), s.jsonArray.map { status(it.jsonPrimitive.content) }, r.statuses) }
             assertEquals(c.s("name"), status(c.s("st")!!), r.status)
             assertEquals(c.s("name"), c.s("text"), r.text)

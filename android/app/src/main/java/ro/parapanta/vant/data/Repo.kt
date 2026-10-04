@@ -23,10 +23,13 @@ import java.net.URL
 import java.net.URLEncoder
 
 private const val HOURLY =
-    "wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,cloud_cover,cape,temperature_2m,wind_speed_850hPa,wind_direction_850hPa,weather_code,cloud_cover_low,cloud_cover_mid,cloud_cover_high,is_day"
+    "wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,cloud_cover,cape,temperature_2m,wind_speed_850hPa,wind_direction_850hPa,weather_code,cloud_cover_low,cloud_cover_mid,cloud_cover_high,is_day,lifted_index"
 
 @Serializable
-private data class OmResp(val hourly: OmHourly)
+private data class OmResp(val hourly: OmHourly, val daily: OmDaily? = null)
+
+@Serializable
+private data class OmDaily(val sunrise: List<String> = emptyList(), val sunset: List<String> = emptyList())
 
 @Serializable
 private data class OmHourly(
@@ -45,11 +48,13 @@ private data class OmHourly(
     @SerialName("cloud_cover_mid") val mi: List<Double?> = emptyList(),
     @SerialName("cloud_cover_high") val hi: List<Double?> = emptyList(),
     @SerialName("is_day") val day: List<Int?> = emptyList(),
+    @SerialName("lifted_index") val li: List<Double?> = emptyList(),
 )
 
 class Repo(private val ctx: Context) {
     private val prefs = ctx.getSharedPreferences("vant", Context.MODE_PRIVATE)
-    private val cacheFile = File(ctx.filesDir, "forecast2.json")
+    // forecast3: are și lifted_index, răsărit, apus (forecast2 nu le avea).
+    private val cacheFile = File(ctx.filesDir, "forecast3.json").also { File(ctx.filesDir, "forecast2.json").delete() }
     val json = Json { ignoreUnknownKeys = true }
 
     val roSites: List<Site> by lazy { readAsset("ro_sites.json") }
@@ -87,6 +92,7 @@ class Repo(private val ctx: Context) {
             "longitude" to sites.joinToString(",") { it.lon.toString() },
             "elevation" to sites.joinToString(",") { it.alt?.toString() ?: "nan" },
             "hourly" to HOURLY,
+            "daily" to "sunrise,sunset",
             "wind_speed_unit" to "ms",
             "timezone" to "Europe/Bucharest",
             "forecast_days" to "7",
@@ -100,8 +106,10 @@ class Repo(private val ctx: Context) {
             val el = json.parseToJsonElement(body)
             val items: List<JsonElement> = if (el is JsonArray) el else listOf(el)
             val bySite = sites.zip(items).associate { (s, e) ->
-                val h = json.decodeFromJsonElement(OmResp.serializer(), e).hourly
-                s.key to SiteForecast(h.time, h.ws, h.wd, h.wg, h.pr, h.cc, h.cape, h.tt, h.w8, h.d8, h.code, h.lo, h.mi, h.hi, h.day)
+                val r = json.decodeFromJsonElement(OmResp.serializer(), e)
+                val h = r.hourly
+                s.key to SiteForecast(h.time, h.ws, h.wd, h.wg, h.pr, h.cc, h.cape, h.tt, h.w8, h.d8, h.code, h.lo, h.mi, h.hi, h.day, h.li,
+                    r.daily?.sunrise ?: emptyList(), r.daily?.sunset ?: emptyList())
             }
             ForecastCache(System.currentTimeMillis(), bySite).also { cacheFile.writeText(json.encodeToString(it)) }
         } finally {
