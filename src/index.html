@@ -186,11 +186,19 @@ dl.facts dt{color:var(--muted)} dl.facts dd{margin:0;font-weight:600}
 button.row{width:100%;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;color:var(--ink)}
 .list button.row:last-child{border-bottom:0}
 .row .dur{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;padding-right:6px}
+.yscale{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;padding:8px 12px 0 12px;font-size:12px;color:var(--muted);text-align:center}
+.yrow{display:block;width:100%;padding:10px 12px 12px;border:0;border-top:1px solid var(--line);background:none;text-align:left;color:var(--ink)}
+.yrow .yt{display:flex;align-items:baseline;gap:10px}
+.yrow .yt b{font:700 22px/1 var(--f-display)}
+.yrow .yt span:not(.dur){flex:1;color:var(--muted);font-size:13px}
+.ybars{display:grid;grid-template-columns:repeat(12,1fr);gap:3px;align-items:end;height:36px;margin-top:8px}
+.ybars i{display:block;background:var(--accent);border-radius:3px 3px 0 0}
+.ybars i.z{background:var(--line);border-radius:2px}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .stats div{background:var(--sunk);border-radius:12px;padding:10px 12px;min-width:0}
 .stats b{display:block;font:700 22px/1.1 var(--f-display);font-variant-numeric:tabular-nums}
 .stats span{font-size:12.5px;color:var(--muted)}
-.seg{display:grid;grid-template-columns:1fr 1fr;margin-top:16px;border:1px solid var(--line);border-radius:11px;overflow:hidden}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;margin-top:16px;border:1px solid var(--line);border-radius:11px;overflow:hidden}
 .seg button{min-height:44px;border:0;background:none;font-weight:600;color:var(--muted)}
 .seg button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
 .chip{display:inline-flex;align-items:center;gap:4px;margin-top:12px;padding:2px 2px 2px 12px;border-radius:999px;background:var(--sunk);font-weight:600}
@@ -901,7 +909,7 @@ function toast(msg, undo){
 /* ---------- jurnal ---------- */
 /* O intrare = o zi de zbor pe o locație: {id, date: 'AAAA-LL-ZZ', site, minutes}. Salvat doar pe acest telefon. */
 let flights = store.get('vld.flights', []);
-let logView = 'days', logSite = null, editingId = null;
+let logView = 'days', logSite = null, logYear = null, editingId = null;   // logYear: „2025” = doar zborurile din anul acela
 const saveFlights = () => store.set('vld.flights', flights);
 const fmtDur = m => { const h = Math.floor(m / 60), r = m % 60; return h ? (r ? `${h} h ${r} min` : `${h} h`) : `${r} min`; };
 const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
@@ -910,7 +918,7 @@ const monthName = k => cap(new Date(k + '-15T12:00').toLocaleDateString(LOC, {mo
 const total = list => list.reduce((a, f) => a + f.minutes, 0);
 const zile = n => n === 1 ? t('1 zi') : t('{n} zile', {n});
 
-function openLog(){ logSite = null; renderLog(); $('#dlgLog').showModal(); syncOnOpen(); }
+function openLog(){ logSite = null; logYear = null; renderLog(); $('#dlgLog').showModal(); syncOnOpen(); }
 function renderLog(){
   if (!flights.length){
     $('#logBody').innerHTML = `<p class="onb-lead" style="margin:4px 0 6px">${t('Încă nu ai nimic notat.')}</p>
@@ -919,17 +927,22 @@ function renderLog(){
     return;
   }
   const year = String(new Date().getFullYear()), inYear = flights.filter(f => f.date.startsWith(year));
-  const places = new Set(flights.map(f => f.site)).size;
-  let html = syncPanel() + `<div class="stats"><div><b>${fmtDur(total(flights))}</b><span>${t('în aer')}</span></div><div><b>${flights.length}</b><span>${t(flights.length === 1 ? 'zi de zbor' : 'zile de zbor')}</span></div><div><b>${places}</b><span>${t(places === 1 ? 'locație' : 'locații')}</span></div></div>
-    <p class="hint" style="margin:8px 0 0">${t('În {y}: {d} în {z}.', {y: year, d: fmtDur(total(inYear)), z: zile(inYear.length)})}</p>
+  // Cu un an ales, totalurile și listele arată doar anul acela.
+  const scope = logYear ? flights.filter(f => f.date.startsWith(logYear)) : flights;
+  const places = new Set(scope.map(f => f.site)).size;
+  let html = syncPanel() + (logYear ? `<h3 style="margin-top:0">${t('Anul {y}', {y: logYear})}</h3>` : '') + `<div class="stats"><div><b>${fmtDur(total(scope))}</b><span>${t('în aer')}</span></div><div><b>${scope.length}</b><span>${t(scope.length === 1 ? 'zi de zbor' : 'zile de zbor')}</span></div><div><b>${places}</b><span>${t(places === 1 ? 'locație' : 'locații')}</span></div></div>
+    ${logYear ? '' : `<p class="hint" style="margin:8px 0 0">${t('În {y}: {d} în {z}.', {y: year, d: fmtDur(total(inYear)), z: zile(inYear.length)})}</p>`}
     <div class="actions"><button class="btn primary" id="addFlight" type="button">${t('+ Adaugă zi de zbor')}</button>${flights.length ? '<button class="btn" id="exportXlsx" type="button">Export Excel</button>' : ''}<button class="btn" id="importXlsx" type="button">Import Excel</button></div>
     <p class="hint" style="margin:6px 0 0">${t('Exportul e și backup: păstrează fișierul și încarcă-l cu „Import Excel” după ce schimbi telefonul. Se adaugă doar ce lipsește.')}</p>
-    <div class="seg" role="tablist"><button role="tab" type="button" aria-selected="${logView === 'days'}" data-view="days">${t('Pe zile')}</button><button role="tab" type="button" aria-selected="${logView === 'sites'}" data-view="sites">${t('Pe locații')}</button></div>`;
+    <div class="seg" role="tablist"><button role="tab" type="button" aria-selected="${logView === 'days'}" data-view="days">${t('Pe zile')}</button><button role="tab" type="button" aria-selected="${logView === 'sites'}" data-view="sites">${t('Pe locații')}</button><button role="tab" type="button" aria-selected="${logView === 'years'}" data-view="years">${t('Pe ani')}</button></div>`;
+  // Filtrele active (an, locație), fiecare cu ✕.
+  const chips = (logView !== 'years' && logYear ? `<div class="chip">${esc(logYear)}<button type="button" data-clear-year aria-label="${t('Arată toți anii')}">✕</button></div> ` : '')
+    + (logView === 'days' && logSite ? `<div class="chip">${esc(logSite)}<button type="button" data-clear-site aria-label="${t('Arată toate locațiile')}">✕</button></div>` : '');
+  html += chips;
   if (!flights.length){
     html += `<p class="hint" style="margin-top:16px">${t('Încă nu ai nimic notat. Apasă „Adaugă zi de zbor”, sau „Am zburat aici” din pagina unei locații. Poți trece și zborurile mai vechi.')}</p>`;
   } else if (logView === 'days'){
-    const list = flights.filter(f => !logSite || f.site === logSite).sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
-    if (logSite) html += `<div class="chip">${esc(logSite)}<button type="button" data-clear-site aria-label="${t('Arată toate locațiile')}">✕</button></div>`;
+    const list = scope.filter(f => !logSite || f.site === logSite).sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
     const months = new Map();
     for (const f of list){ const k = f.date.slice(0, 7); if (!months.has(k)) months.set(k, []); months.get(k).push(f); }
     for (const [k, fs] of months){
@@ -937,15 +950,33 @@ function renderLog(){
         + fs.map(f => `<button class="row" type="button" data-fl="${f.id}"><div class="t"><b>${esc(f.site)}</b><span>${fmtDay(f.date)}</span></div><span class="dur">${fmtDur(f.minutes)}</span></button>`).join('')
         + '</div>';
     }
+  } else if (logView === 'years'){
+    html += yearsHtml();
   } else {
     const by = new Map();
-    for (const f of flights){ const x = by.get(f.site) || {site: f.site, n: 0, m: 0, last: ''}; x.n++; x.m += f.minutes; if (f.date > x.last) x.last = f.date; by.set(f.site, x); }
+    for (const f of scope){ const x = by.get(f.site) || {site: f.site, n: 0, m: 0, last: ''}; x.n++; x.m += f.minutes; if (f.date > x.last) x.last = f.date; by.set(f.site, x); }
     const rows = [...by.values()].sort((a, b) => b.m - a.m);
     html += `<h3>${t('Locații')}</h3><p class="hint" style="margin:-4px 0 8px">${t('Atinge o locație ca să vezi zilele de acolo.')}</p><div class="list">`
       + rows.map(x => `<button class="row" type="button" data-site-filter="${esc(x.site)}"><div class="t"><b>${esc(x.site)}</b><span>${t('{z} · ultima: {d}', {z: zile(x.n), d: fmtDay(x.last)})}</span></div><span class="dur">${fmtDur(x.m)}</span></button>`).join('')
       + '</div>';
   }
   $('#logBody').innerHTML = html;
+}
+/* Pe ani: fiecare an cu timpul în aer, zilele, locațiile și o bară pe lună (aceeași scară pentru toți anii, ca să-i compari). */
+function yearsHtml(){
+  const by = new Map();
+  for (const f of flights){
+    const y = f.date.slice(0, 4), x = by.get(y) || {y, m: 0, n: 0, sites: new Set(), months: Array(12).fill(0)};
+    x.m += f.minutes; x.n++; x.sites.add(f.site); x.months[+f.date.slice(5, 7) - 1] += f.minutes; by.set(y, x);
+  }
+  const rows = [...by.values()].sort((a, b) => b.y.localeCompare(a.y));
+  const top = Math.max(1, ...rows.flatMap(x => x.months));
+  const scale = Array.from({length: 12}, (_, i) => new Date(2026, i, 15).toLocaleDateString(LOC, {month: 'narrow'}));
+  return `<h3>${t('Ani')}</h3><p class="hint" style="margin:-4px 0 8px">${t('Atinge un an ca să vezi zilele lui. Barele arată timpul în aer pe fiecare lună.')}</p>
+    <div class="list"><div class="yscale" aria-hidden="true">${scale.map(m => `<span>${m}</span>`).join('')}</div>`
+    + rows.map(x => `<button class="yrow" type="button" data-year="${x.y}"><span class="yt"><b>${x.y}</b><span>${zile(x.n)} · ${x.sites.size} ${t(x.sites.size === 1 ? 'locație' : 'locații')}</span><span class="dur">${fmtDur(x.m)}</span></span>`
+      + `<span class="ybars" aria-hidden="true">${x.months.map(v => `<i class="${v ? '' : 'z'}" style="height:${v ? Math.max(8, Math.round(v / top * 100)) : 6}%"></i>`).join('')}</span></button>`).join('')
+    + '</div>';
 }
 function openFlight(f = {}){
   editingId = f.id || null;
@@ -1154,6 +1185,8 @@ document.addEventListener('click', e => {
   if (btn.dataset.view){ logView = btn.dataset.view; logSite = null; renderLog(); return; }
   if (btn.dataset.siteFilter != null){ logSite = btn.dataset.siteFilter; logView = 'days'; renderLog(); return; }
   if (btn.matches('[data-clear-site]')){ logSite = null; renderLog(); return; }
+  if (btn.dataset.year){ logYear = btn.dataset.year; logView = 'days'; logSite = null; renderLog(); $('#logBody').scrollTop = 0; return; }
+  if (btn.matches('[data-clear-year]')){ logYear = null; renderLog(); return; }
   if (btn.dataset.fl){ return openFlight(flights.find(f => f.id === btn.dataset.fl)); }
   if (btn.dataset.flew != null){ const s = sites[+btn.dataset.flew]; $('#dlgCell').close(); openLog(); return openFlight({site: s.n}); }
   if (btn.id === 'flDelete'){
