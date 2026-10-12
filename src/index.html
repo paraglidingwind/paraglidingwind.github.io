@@ -48,7 +48,7 @@ button,input,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 [hidden]{display:none!important}
-.app{display:flex;flex-direction:column;height:100%;max-width:1100px;margin:0 auto}
+.app{display:flex;flex-direction:column;height:100%;max-width:1100px;margin:0 auto;padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
 
 /* Bara de sus */
 .top{display:flex;align-items:center;gap:10px;padding:10px 16px 6px}
@@ -87,9 +87,9 @@ table.grid{border-collapse:separate;border-spacing:0;font-variant-numeric:tabula
 .site{display:flex;align-items:center;gap:7px;width:100%;height:62px;padding:0 6px 0 8px;border:0;background:none;text-align:left}
 .site .rose{flex:0 0 26px;width:26px;height:26px}
 .site b{display:block;font:600 14.5px/1.1 var(--f-ui);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.site span{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+.site span{display:block;font-size:12px;color:var(--muted);margin-top:2px}
 .site .nodir{display:inline-block;margin-top:2px;padding:0 4px;border-radius:4px;background:var(--maybe-bg);color:var(--maybe);font-size:10.5px;font-weight:700}
-.live{display:inline-block;margin-left:4px;padding:0 4px;border-radius:4px;background:var(--accent);color:var(--accent-ink);font-size:9.5px;font-weight:700;letter-spacing:.05em;font-style:normal;vertical-align:1px}
+.live{display:inline-block;margin-left:4px;padding:0 4px;border-radius:4px;background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:700;letter-spacing:.05em;font-style:normal;vertical-align:1px}
 .holfuy{margin-top:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
 .holfuy iframe{display:block;width:100%;height:258px;border:0}
 .hf-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:16px 0 6px}
@@ -105,7 +105,7 @@ table.grid{border-collapse:separate;border-spacing:0;font-variant-numeric:tabula
 .skyrow .sky{width:30px;height:30px}
 .note{margin:6px 0 0;color:var(--muted);font-size:13.5px}
 .cell b{font:700 17px/1 var(--f-ui)}
-.cell small{font-size:11.5px;line-height:1}
+.cell small{font-size:12.5px;line-height:1}
 .cell .flag{position:absolute;top:0;left:0;width:0;height:0;border-top:12px solid currentColor;border-right:12px solid transparent}
 .cell.go{background:var(--go-bg);color:var(--go)}
 .cell.maybe{background:var(--maybe-bg);color:var(--maybe)}
@@ -169,7 +169,7 @@ dl.facts dt{color:var(--muted)} dl.facts dd{margin:0;font-weight:600}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 14px;border-radius:11px;border:1px solid var(--line);background:var(--surface);font-weight:600;text-decoration:none;color:var(--ink)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .btn.danger{color:var(--no)}
-.btn.small{min-height:36px;padding:0 10px;font-size:14px}
+.btn.small{min-height:44px;padding:0 12px;font-size:14px}
 
 .list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .row{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 10px;border-bottom:1px solid var(--line);min-height:52px}
@@ -179,7 +179,7 @@ dl.facts dt{color:var(--muted)} dl.facts dd{margin:0;font-weight:600}
 .row .t b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .row .t span{display:block;font-size:12px;color:var(--muted)}
 .row .acts{display:flex;gap:2px}
-.row .acts button{width:40px;height:40px;border-radius:10px;border:0;background:none;font-size:18px;color:var(--muted)}
+.row .acts button{width:44px;height:44px;border-radius:10px;border:0;background:none;font-size:18px;color:var(--muted)}
 .row .acts button:disabled{opacity:.3}
 .row .acts button.del{color:var(--no)}
 .more{width:100%;min-height:48px;border:0;background:none;color:var(--accent);font-weight:700}
@@ -194,7 +194,7 @@ button.row{width:100%;border:0;border-bottom:1px solid var(--line);background:no
 .seg button{min-height:44px;border:0;background:none;font-weight:600;color:var(--muted)}
 .seg button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
 .chip{display:inline-flex;align-items:center;gap:4px;margin-top:12px;padding:2px 2px 2px 12px;border-radius:999px;background:var(--sunk);font-weight:600}
-.chip button{border:0;background:none;width:36px;height:36px;color:var(--muted)}
+.chip button{border:0;background:none;width:44px;height:44px;color:var(--muted)}
 .sheet h3 small{text-transform:none;letter-spacing:0;font:500 13px var(--f-ui)}
 .mapbox{margin-top:10px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
 #map{height:320px;background:var(--sunk)}
@@ -266,9 +266,45 @@ details.custom{margin-top:10px}
 details.custom summary{min-height:44px;display:flex;align-items:center;font-weight:600;color:var(--accent);cursor:pointer}
 .nodir-box{margin-top:12px;padding:12px;border-radius:12px;background:var(--maybe-bg)}
 .nodir-box p{margin:4px 0 0;font-size:14px}
-.linkbtn{border:0;background:none;padding:0;color:var(--accent);font-weight:700;text-decoration:underline;min-height:32px}
+.linkbtn{border:0;background:none;padding:0;color:var(--accent);font-weight:700;text-decoration:underline;min-height:44px}
 .site .nodir{display:inline-block}
-.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;z-index:10}
+/* UI-05: navigarea de jos, cu etichete. Pe ecrane late devine o bară plutitoare, centrată. */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:5;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabbar button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:60px;border:0;background:none;color:var(--muted);font:600 12.5px/1 var(--f-ui)}
+.tabbar svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tabbar button[aria-current="page"]{color:var(--accent)}
+@media (min-width: 900px){ .tabbar{left:50%;right:auto;transform:translateX(-50%);width:520px;bottom:12px;border:1px solid var(--line);border-radius:16px;box-shadow:0 6px 24px rgb(0 0 0 / .12)} }
+/* UI-03: comutatorul Pe ore / Pe scurt și vederea pe scurt */
+.viewbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:0 16px 8px}
+/* Doar tabla se micșorează când ecranul e scund; restul își păstrează înălțimea (altfel banda de zile se taie). */
+.top,.banner,.days,.viewbar,.legend{flex:0 0 auto}
+.seg2.lang{display:inline-flex}
+.viewbar .chipb{min-height:44px}
+.board.summary{margin:0 16px;border:1px solid var(--line);border-radius:12px;padding:4px 0}
+.sumhead,.sumrow{display:grid;grid-template-columns:118px 1fr;gap:10px;align-items:center;padding:8px 12px}
+.sumhead{padding-bottom:0}
+.sumrow{width:100%;border:0;border-top:1px solid var(--line);background:none;text-align:left;color:var(--ink)}
+.sumrow .sn{display:flex;align-items:center;gap:7px;min-width:0}
+.sumrow .sn .rose{flex:0 0 24px;width:24px;height:24px}
+.sumrow .sn b{display:block;font:600 14.5px/1.1 var(--f-ui);overflow:hidden;text-overflow:ellipsis}
+.sumrow .sn small{display:block;font-size:12px;color:var(--muted)}
+.sumrow .wt{margin-top:5px;font-size:13.5px}
+.strip i.past,.grid .past{opacity:.45}
+.grid tr.hl th,.grid tr.hl td .cell{box-shadow:inset 0 0 0 2px var(--accent)}
+/* UI-04: banda de zile spune câte decolări sunt favorabile */
+.day .bar{display:flex;gap:1px;height:6px;margin-top:6px;border-radius:3px;overflow:hidden;width:64px;background:var(--line)}
+.day .bar i{display:block;height:100%}
+.day .cnt{margin-top:4px;font-size:12px;font-weight:600;color:var(--muted)}
+.day .cnt.go{color:var(--go)} .day .cnt.maybe{color:var(--maybe)}
+.helplist{margin:0;padding-left:18px} .helplist li{margin:0 0 6px}
+.seg2.lang a{display:grid;place-items:center;min-height:44px;padding:0 16px;font-weight:600;color:var(--muted);text-decoration:none}
+.seg2.lang a[aria-current="true"]{background:var(--ink);color:var(--bg)}
+details.hfbox{margin-top:16px;border:1px solid var(--line);border-radius:12px}
+details.hfbox summary{min-height:48px;display:flex;align-items:center;gap:8px;padding:0 12px;font-weight:600;cursor:pointer}
+details.hfbox .hf-in{padding:0 12px 12px}
+.toast{display:flex;align-items:center;width:max-content;max-width:calc(100vw - 32px)}
+.toast button{margin-left:12px;border:0;background:none;color:var(--accent);font-weight:700;min-height:36px;padding:0 4px}
+.toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;z-index:10}
 </style>
 </head>
 <body>
@@ -279,11 +315,13 @@ details.custom summary{min-height:44px;display:flex;align-items:center;font-weig
       <p id="status">Se încarcă prognoza…</p>
     </div>
     <button class="iconbtn" id="refresh" aria-label="Reîmprospătează prognoza"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
-    <button class="iconbtn" id="log" aria-label="Jurnal de zbor"><svg viewBox="0 0 24 24"><path d="M6 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6z"/><path d="M9 3v18"/><path d="M12.5 8h3.5M12.5 12h3.5"/></svg></button>
-    <button class="iconbtn" id="edit" aria-label="Editează lista de situri"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M14 6l4 4"/></svg></button>
   </div>
   <div class="banner" id="banner" hidden></div>
   <div class="days" id="days" role="toolbar" aria-label="Alege ziua"></div>
+  <div class="viewbar">
+    <span class="seg2" role="group" aria-label="Vedere"><button type="button" data-boardview="hours" aria-pressed="true">Pe ore</button><button type="button" data-boardview="summary" aria-pressed="false">Pe scurt</button></span>
+    <button type="button" class="chipb" id="sortBest" aria-pressed="false" hidden>Cele mai bune primele</button>
+  </div>
   <div class="board" id="board"></div>
   <div class="legend">
     <span class="k"><b class="lg go"></b>Favorabil</span>
@@ -292,14 +330,17 @@ details.custom summary{min-height:44px;display:flex;align-items:center;font-weig
     <span class="k"><b class="lg calm"></b>Calm</span>
     <span class="k"><b class="lg warn"></b>Avertizare</span>
     <span class="k"><b class="lg night"></b>Noapte</span>
-    <span>Pictograma: cerul și tipul de nori · săgeata: încotro bate vântul · cifra mare: vânt la 10 m, mică: rafale (m/s)</span>
+    <button type="button" class="linkbtn" id="helpOpen">Ce înseamnă?</button>
     <span class="disclaimer">Prognoză de model, nu o garanție. Decizia îți aparține, la decolare.</span>
-    <a href="confidentialitate.html" style="color:var(--muted)">Confidențialitate</a>
-    <a href="termeni.html" style="color:var(--muted)">Termeni</a>
-    <a id="langSw" href="?lang=en" style="color:var(--accent);font-weight:600">English</a>
-    <span id="ver" class="ver"></span>
   </div>
 </div>
+
+<nav class="tabbar" aria-label="Navigare">
+  <button type="button" id="navBoard" aria-current="page"><svg viewBox="0 0 24 24"><path d="M3 9h18M3 15h18M9 3v18"/><rect x="3" y="3" width="18" height="18" rx="3"/></svg><span>Prognoză</span></button>
+  <button type="button" id="log"><svg viewBox="0 0 24 24"><path d="M6 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6z"/><path d="M9 3v18"/><path d="M12.5 8h3.5M12.5 12h3.5"/></svg><span>Jurnal</span></button>
+  <button type="button" id="edit"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>Situri</span></button>
+  <button type="button" id="settingsOpen"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span>Setări</span></button>
+</nav>
 
 <dialog id="dlgCell"><div class="sheet">
   <header><h2 id="cellTitle"></h2><button class="iconbtn" data-close aria-label="Închide"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
@@ -337,7 +378,7 @@ details.custom summary{min-height:44px;display:flex;align-items:center;font-weig
 </div></dialog>
 
 <dialog id="dlgEdit"><div class="sheet">
-  <header><h2>Situri și setări</h2><button class="iconbtn" data-close aria-label="Închide"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+  <header><h2>Situri</h2><button class="iconbtn" data-close aria-label="Închide"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
   <div class="body">
     <h3>Lista ta</h3>
     <div class="list" id="myList"></div>
@@ -347,26 +388,8 @@ details.custom summary{min-height:44px;display:flex;align-items:center;font-weig
       <button class="btn small danger" id="resetSites" type="button">Reia configurarea</button>
     </div>
 
-    <h3>Limitele tale</h3>
-    <div class="profiles" id="profiles"></div>
-    <details class="custom" id="customBox"><summary>Personalizat (pragurile în m/s)</summary>
-      <div class="three">
-        <div><label class="f" for="sGood">Bun până la (m/s)</label><input class="in" id="sGood" type="number" step="0.5" inputmode="decimal"></div>
-        <div><label class="f" for="sMarg">Marginal până la</label><input class="in" id="sMarg" type="number" step="0.5" inputmode="decimal"></div>
-        <div><label class="f" for="sCalm">Calm sub</label><input class="in" id="sCalm" type="number" step="0.5" inputmode="decimal"></div>
-        <div><label class="f" for="sGust">Rafale maxime</label><input class="in" id="sGust" type="number" step="0.5" inputmode="decimal"></div>
-        <div><label class="f" for="sSpread">Rafală − vânt peste</label><input class="in" id="sSpread" type="number" step="0.5" inputmode="decimal"></div>
-        <div><label class="f" for="sRain">Ploaie peste (mm/h)</label><input class="in" id="sRain" type="number" step="0.1" inputmode="decimal"></div>
-      </div>
-    </details>
-    <p class="err" id="sErr" hidden></p>
-    <h3>Ore afișate</h3>
-    <div class="two">
-      <div><label class="f" for="sFrom">De la ora</label><input class="in" id="sFrom" type="number" min="0" max="23" inputmode="numeric"></div>
-      <div><label class="f" for="sTo">Până la ora</label><input class="in" id="sTo" type="number" min="0" max="23" inputmode="numeric"></div>
-    </div>
 
-    <h3>Decolare care nu e în listă</h3>
+    <details class="custom" id="manualBox"><summary>Adaugă o decolare care nu e în listă</summary>
     <p class="hint" style="margin:0">Pune un pin pe hartă: completez coordonatele, altitudinea, numele și direcțiile sugerate din panta terenului. Poți corecta orice câmp, sau le poți scrie de mână.</p>
     <div class="actions" style="margin-top:8px">
       <button class="btn small" type="button" id="mapOpen">Alege pe hartă</button>
@@ -390,7 +413,56 @@ details.custom summary{min-height:44px;display:flex;align-items:center;font-weig
       <p class="err" id="mErr" hidden></p>
       <div class="actions"><button class="btn primary" type="submit">Adaugă situl</button></div>
     </form>
+    </details>
 
+  </div>
+</div></dialog>
+
+<dialog id="dlgSettings"><div class="sheet">
+  <header><h2>Setări</h2><button class="iconbtn" data-close aria-label="Închide"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+  <div class="body">
+    <h3>Limitele tale</h3>
+    <div class="profiles" id="profiles"></div>
+    <details class="custom" id="customBox"><summary>Personalizat (pragurile în m/s)</summary>
+      <div class="three">
+        <div><label class="f" for="sGood">Bun până la (m/s)</label><input class="in" id="sGood" type="number" step="0.5" inputmode="decimal"></div>
+        <div><label class="f" for="sMarg">Marginal până la</label><input class="in" id="sMarg" type="number" step="0.5" inputmode="decimal"></div>
+        <div><label class="f" for="sCalm">Calm sub</label><input class="in" id="sCalm" type="number" step="0.5" inputmode="decimal"></div>
+        <div><label class="f" for="sGust">Rafale maxime</label><input class="in" id="sGust" type="number" step="0.5" inputmode="decimal"></div>
+        <div><label class="f" for="sSpread">Rafală − vânt peste</label><input class="in" id="sSpread" type="number" step="0.5" inputmode="decimal"></div>
+        <div><label class="f" for="sRain">Ploaie peste (mm/h)</label><input class="in" id="sRain" type="number" step="0.1" inputmode="decimal"></div>
+      </div>
+    </details>
+    <p class="err" id="sErr" hidden></p>
+    <h3>Ore afișate</h3>
+    <div class="two">
+      <div><label class="f" for="sFrom">De la ora</label><input class="in" id="sFrom" type="number" min="0" max="23" inputmode="numeric"></div>
+      <div><label class="f" for="sTo">Până la ora</label><input class="in" id="sTo" type="number" min="0" max="23" inputmode="numeric"></div>
+    </div>
+    <h3>Limba</h3>
+    <div class="seg2 lang" id="langSeg"><a href="?lang=ro" data-lang="ro">Română</a><a href="?lang=en" data-lang="en">English</a></div>
+    <h3>Despre</h3>
+    <p class="hint" style="margin:0">Prognoza: Open-Meteo · Decolări: ParaglidingEarth (CC BY-SA) · Vânt live: Holfuy</p>
+    <div class="links"><a class="btn small" href="confidentialitate.html">Confidențialitate</a><a class="btn small" href="termeni.html">Termeni</a></div>
+    <p class="hint" id="ver"></p>
+  </div>
+</div></dialog>
+
+<dialog id="dlgHelp"><div class="sheet">
+  <header><h2>Cum citești tabla</h2><button class="iconbtn" data-close aria-label="Închide"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+  <div class="body">
+    <p class="hint" style="margin:0 0 10px">Fiecare celulă e o oră la o decolare:</p>
+    <ul class="helplist">
+      <li>Pictograma de sus: cerul și tipul de nori.</li>
+      <li>Săgeata: încotro bate vântul.</li>
+      <li>Cifra mare: vântul la 10 m (m/s). Cifra mică: rafalele.</li>
+      <li>Culoarea: verdictul, după direcțiile decolării și limitele tale.</li>
+      <li>Colțul marcat: o avertizare (vânt tare la altitudine, furtună, decolare fără direcții). Atinge celula ca să vezi motivul.</li>
+      <li>Orele estompate: noapte, sau ore deja trecute azi.</li>
+    </ul>
+    <h3>Pe scurt</h3>
+    <p class="hint" style="margin:0">Arată toată ziua pentru fiecare decolare, cu fereastra cea mai bună. „Favorabil” cere minimum 2 ore bune la rând. Atinge o decolare ca să-i vezi orele.</p>
+    <p class="disclaimer">Prognoză de model, nu o garanție. Decizia îți aparține, la decolare.</p>
   </div>
 </div></dialog>
 
@@ -439,7 +511,7 @@ function translateStatic(){
     for (const a of document.querySelectorAll('a[href="termeni.html"]')) a.href = 'terms.html';
   }
   $('#ver').textContent = t('Versiunea {v}', {v: VERSION});
-  const sw = $('#langSw'); sw.textContent = LANG === 'en' ? 'Română' : 'English'; sw.href = '?lang=' + (LANG === 'en' ? 'ro' : 'en');
+  for (const a of document.querySelectorAll('#langSeg a')) a.setAttribute('aria-current', String(a.dataset.lang === LANG));
 }
 const VERSION = '__VERSION__';
 const SKY_ICONS = __SKY_ICONS__;
@@ -508,6 +580,7 @@ let settings = {...DEFAULT_SETTINGS, ...store.get('vld.settings', {})};
 let fc = store.get('vld.fc3', null);   // {at, bySite:{key:{...}}}; vld.fc2 (fără li, răsărit, apus) nu se mai citește
 try{ localStorage.removeItem('vld.fc2') }catch{}
 let dayIdx = 0;
+let boardView = store.get('vld.view', 'hours'), sortBest = store.get('vld.sortBest', false);   // UI-03
 let loading = false, lastError = null;
 
 const key = s => s.lat.toFixed(4)+','+s.lon.toFixed(4);
@@ -618,12 +691,17 @@ function render(){
   b.hidden = !lastError;
   if (lastError) b.textContent = t('Nu am putut descărca prognoza. {e}', {e: lastError}) + (fc ? t(' Arăt datele de la {t}.', {t: new Date(fc.at).toLocaleTimeString(LOC,{hour:'2-digit',minute:'2-digit'})}) : t(' Apasă ↻ pentru a încerca din nou.'));
 
-  // zile
+  // zile (UI-04): câte decolări sunt favorabile în ziua respectivă, cu o bară în culorile stărilor
   $('#days').innerHTML = ds.map((d, i) => {
-    const dt = new Date(d+'T12:00');
-    const dots = sites.map(s => `<i class="${bestOfDay(s, d)}"></i>`).join('');
-    return `<button class="day" data-i="${i}" aria-pressed="${i===dayIdx}"><b>${dayName(d,i)}</b><span>${dt.getDate()} ${dt.toLocaleDateString(LOC,{month:'short'}).replace('.','')}</span><span class="dots">${dots}</span></button>`;
+    const dt = new Date(d+'T12:00'), sts = sites.map(s => bestOfDay(s, d)), n = k => sts.filter(x => x === k).length;
+    const cnt = n('go') ? [n('go') === 1 ? t('1 favorabilă') : t('{n} favorabile', {n: n('go')}), 'go']
+      : n('maybe') ? [n('maybe') === 1 ? t('1 marginală') : t('{n} marginale', {n: n('maybe')}), 'maybe'] : [t('nimic bun'), ''];
+    const bar = ['go', 'maybe', 'calm', 'no'].map(k => n(k) ? `<i class="${k}" style="flex:${n(k)}"></i>` : '').join('');
+    return `<button class="day" data-i="${i}" aria-pressed="${i===dayIdx}"><b>${dayName(d,i)}</b><span>${dt.getDate()} ${dt.toLocaleDateString(LOC,{month:'short'}).replace('.','')}</span>`
+      + (sites.length ? `<span class="bar" aria-hidden="true">${bar}</span><span class="cnt ${cnt[1]}">${cnt[0]}</span>` : '') + `</button>`;
   }).join('');
+  for (const b of document.querySelectorAll('[data-boardview]')) b.setAttribute('aria-pressed', String(b.dataset.boardview === boardView));
+  $('#sortBest').hidden = boardView !== 'summary'; $('#sortBest').setAttribute('aria-pressed', String(sortBest));
 
   // tabla
   const board = $('#board');
@@ -637,21 +715,61 @@ function render(){
   }
   const d = ds[dayIdx], hs = hours();
   const nowH = (d === localDate(new Date())) ? String(new Date().getHours()).padStart(2,'0') : null;
+  board.classList.toggle('summary', boardView === 'summary');
+  if (boardView === 'summary') return renderSummary(d, hs, nowH);
+  // Azi, orele deja trecute apar estompate.
+  const past = h => nowH != null && h < nowH ? ' past' : '';
   let html = `<table class="grid"><thead><tr><th class="corner">${dayName(d,dayIdx)}</th>`;
-  html += hs.map(h => `<th class="${h===nowH?'now':''}" ${h===nowH?'id="nowcol"':''}>${h}</th>`).join('') + '</tr></thead><tbody>';
+  html += hs.map(h => `<th class="${h===nowH?'now':''}${past(h)}" ${h===nowH?'id="nowcol"':''}>${h}</th>`).join('') + '</tr></thead><tbody>';
   sites.forEach((s, si) => {
     html += `<tr><th><button class="site" data-site="${si}">${roseSvg(s.o)}<span><b>${esc(s.n)}</b><span>${s.alt ? s.alt + ' m' : ''}${stationOf(s) ? '<em class="live">LIVE</em>' : ''}</span>${s.o.some(Boolean) ? '' : `<span class="nodir">${t('fără direcții')}</span>`}</span></button></th>`;
     for (const h of hs){
       const {w, r} = rateAt(s, d, h);
-      if (r.st === 'na'){ html += `<td><div class="cell na">–</div></td>`; continue; }
+      if (r.st === 'na'){ html += `<td class="${past(h)}"><div class="cell na">–</div></td>`; continue; }
       const rain = w.pr > settings.rain ? `<span class="rain">${w.pr.toFixed(1)}mm</span>` : `<small>${Math.round(w.wg)}</small>`;
-      html += `<td><button class="cell ${r.st}" data-site="${si}" data-h="${h}" aria-label="${t('{n} ora {h}: {st}, {d} {v} metri pe secundă, {sky}', {n: esc(s.n), h, st: STATUS_TXT[r.st], d: DIRS[sectorOf(w.wd)], v: w.ws.toFixed(1), sky: sky(w).label})}${r.warn.length ? ', ' + t('cu avertizare') : ''}">`
+      html += `<td class="${past(h)}"><button class="cell ${r.st}" data-site="${si}" data-h="${h}" aria-label="${t('{n} ora {h}: {st}, {d} {v} metri pe secundă, {sky}', {n: esc(s.n), h, st: STATUS_TXT[r.st], d: DIRS[sectorOf(w.wd)], v: w.ws.toFixed(1), sky: sky(w).label})}${r.warn.length ? ', ' + t('cu avertizare') : ''}">`
         + (r.warn.length ? '<span class="flag" aria-hidden="true"></span>' : '') + `<span class="ic">${skySvg(sky(w).icon)}<svg class="arr" viewBox="0 0 24 24" style="transform:rotate(${(w.wd+180)%360}deg)">${ARROW}</svg></span><b>${Math.round(w.ws)}</b>${rain}</button></td>`;
     }
     html += '</tr>';
   });
   board.innerHTML = html + '</tbody></table>';
+  fitCells();
 }
+/* UI-03: toată ziua pe ecran, fără derulare: o bandă de ore pentru fiecare decolare și fereastra ei cea mai bună. */
+function renderSummary(d, hs, nowH){
+  const order = {go: 0, maybe: 1, calm: 2, no: 3, na: 4};
+  let rows = sites.map((s, si) => ({s, si, sm: daySummary(s, d)}));
+  if (sortBest) rows = rows.sort((a, b) => order[a.sm.st] - order[b.sm.st] || b.sm.sts.filter(x => x === 'go').length - a.sm.sts.filter(x => x === 'go').length);
+  const past = i => nowH != null && hs[i] < nowH ? ' past' : '';
+  $('#board').innerHTML = `<div class="sumhead"><span></span><span class="strip" style="--n:${hs.length}">${hs.map((h, i) => `<em>${i % 3 === 0 ? h : ''}</em>`).join('')}</span></div>`
+    + rows.map(({s, si, sm}) => `<button class="sumrow" type="button" data-sumsite="${si}"><span class="sn">${roseSvg(s.o)}<span><b>${esc(s.n)}</b><small>${s.alt ? s.alt + ' m' : ''}${stationOf(s) ? '<em class="live">LIVE</em>' : ''}</small></span></span>`
+      + `<span><span class="strip" style="--n:${hs.length}">${sm.sts.map((x, i) => `<i class="${x}${past(i)}"></i>`).join('')}</span><span class="wt ${sm.st}">${esc(sm.text)}</span></span></button>`).join('');
+}
+/* Pe ecrane late celulele se lățesc ca toate orele să umple tabla (pe telefon rămân de 52 px). */
+function fitCells(){
+  const b = $('#board'), n = hours().length; if (!b || !b.querySelector('.grid')) return;
+  const w = Math.max(52, Math.min(88, Math.floor((b.clientWidth - 120) / n)));
+  b.style.setProperty('--cell-w', w + 'px');
+}
+addEventListener('resize', () => { clearTimeout(fitCells.t); fitCells.t = setTimeout(fitCells, 150); });
+/* În altă zi decât azi, tabla pornește de la prima oră favorabilă (oricare decolare), nu de la 08. */
+function scrollToBest(){
+  const b = $('#board'), d = dates()[dayIdx]; if (!b.querySelector('.grid') || !d) return;
+  let first = -1;
+  for (const s of sites){ const i = daySummary(s, d).sts.indexOf('go'); if (i >= 0 && (first < 0 || i < first)) first = i; }
+  const cw = parseFloat(getComputedStyle(b).getPropertyValue('--cell-w')) || 52;
+  b.scrollLeft = first > 0 ? (first - 1) * cw : 0;
+}
+function showSiteHours(si){
+  const sm = daySummary(sites[si], dates()[dayIdx]);
+  boardView = 'hours'; store.set('vld.view', boardView); render();
+  const i = [sm.sts.indexOf('go'), sm.sts.indexOf('maybe')].find(x => x >= 0) ?? 0, b = $('#board');
+  const cw = parseFloat(getComputedStyle(b).getPropertyValue('--cell-w')) || 52;
+  b.scrollLeft = Math.max(0, (i - 1) * cw);
+  const tr = b.querySelectorAll('tbody tr')[si];
+  if (tr){ tr.scrollIntoView({block: 'nearest'}); tr.classList.add('hl'); setTimeout(() => tr.classList.remove('hl'), 1600); }
+}
+const goToDay = () => { render(); if (dayIdx === 0) scrollToNow(); else scrollToBest(); };
 function agoTxt(at){
   const m = Math.round((Date.now() - at)/6e4);
   if (m < 1) return t('acum');
@@ -717,19 +835,25 @@ function openSite(si){
     ${s.o.some(Boolean) ? '' : `<div class="nodir-box"><b>${t('Decolarea nu are direcții')}</b><p>${t('ParaglidingEarth nu are direcțiile ei. Până le setezi, verdictul e cel mult „Marginal”.')}</p><div class="actions"><button class="btn small primary" type="button" data-dir-suggest="${si}">${t('Sugerează din panta terenului')}</button><button class="btn small" type="button" data-dir-edit="${si}">${t('Setează de mână')}</button></div></div>`}
     <div class="actions"><button class="btn small" data-flew="${si}" type="button">${t('✓ Am zburat aici')}</button>${s.o.some(Boolean) ? `<button class="btn small" type="button" data-dir-edit="${si}">${t('Modifică direcțiile')}</button>` : ''}</div>
     <div id="dirEditor"></div>
-    ${holfuyBlock(s)}
     <h3>${t('Următoarele zile')}</h3>
     <p class="hint" style="margin:0 0 8px">${t('Fiecare pătrățel e o oră, de la {a} la {b}. Atinge o zi ca s-o vezi în tabel.', {a: hs[0], b: hs[hs.length-1]})}</p>
-    <div class="week">${scale}${rows}</div>${siteLinks(s)}`;
+    <div class="week">${scale}${rows}</div>
+    ${holfuyBlock(s)}${siteLinks(s)}`;
   $('#cellBody').scrollTop = 0;
 }
+/* Vântul măsurat acum: pliat sub prognoză; widgetul Holfuy se încarcă doar când îl deschizi. */
 function holfuyBlock(s){
   const st = stationOf(s); if (!st) return '';
   const where = st.km == null ? '' : st.km < 0.5 ? t('la decolare') : t('la {km} km', {km: LANG === 'en' ? st.km.toFixed(1) : st.km.toFixed(1).replace('.', ',')});
-  return `<div class="hf-head"><h3 style="margin:0">${t('Acum · stația Holfuy {n}', {n: esc(st.n)})}</h3><a href="https://holfuy.com/en/weather/${st.id}" target="_blank" rel="noopener">${t('Istoric ↗')}</a></div>
-    <p class="hint" style="margin:0">${[where, st.alt ? st.alt + ' m' : ''].filter(Boolean).join(' · ')}${t('. Vânt măsurat în timp real; zonele colorate de pe cadran sunt setate de administratorul stației.')}</p>
-    <div class="holfuy"><iframe title="${t('Vântul acum la {n}', {n: esc(st.n)})}" src="https://widget.holfuy.com/?station=${st.id}&su=m/s&t=C&lang=en&mode=detailed"></iframe></div>`;
+  return `<details class="hfbox" data-hf="${st.id}" data-hfn="${esc(st.n)}"><summary><em class="live">LIVE</em>${t('Vântul acum · stația Holfuy {n}', {n: esc(st.n)})}</summary>
+    <div class="hf-in"><p class="hint" style="margin:0">${[where, st.alt ? st.alt + ' m' : ''].filter(Boolean).join(' · ')}${t('. Vânt măsurat în timp real; zonele colorate de pe cadran sunt setate de administratorul stației.')}</p>
+    <div class="holfuy"></div><div class="links"><a class="btn small" href="https://holfuy.com/en/weather/${st.id}" target="_blank" rel="noopener">${t('Istoric ↗')}</a></div></div></details>`;
 }
+document.addEventListener('toggle', e => {
+  const d = e.target; if (!d.matches?.('details.hfbox') || !d.open) return;
+  const box = d.querySelector('.holfuy');
+  if (!box.firstChild) box.innerHTML = `<iframe title="${t('Vântul acum la {n}', {n: d.dataset.hfn})}" src="https://widget.holfuy.com/?station=${d.dataset.hf}&su=m/s&t=C&lang=en&mode=detailed"></iframe>`;
+}, true);
 function siteLinks(s){
   return `<div class="links">
     <a class="btn small" target="_blank" rel="noopener" href="https://www.windy.com/${s.lat}/${s.lon}?${s.lat},${s.lon},12">Windy</a>
@@ -740,8 +864,13 @@ function siteLinks(s){
 /* ---------- editare ---------- */
 let manualRose = [0,0,0,0,0,0,0,0];
 function openEdit(){
-  renderMyList(); renderProfiles(); renderManualRose(); fillSettings(); $('#sErr').hidden = true;
+  renderMyList(); renderManualRose();
   $('#dlgEdit').showModal();
+}
+/* UI-05: setările (limite, ore, limbă, despre) au ecranul lor, separat de lista de situri. */
+function openSettings(){
+  renderProfiles(); fillSettings(); $('#sErr').hidden = true;
+  $('#dlgSettings').showModal();
 }
 function renderMyList(){
   $('#myList').innerHTML = sites.length ? sites.map((s, i) => `<div class="row">${roseSvg(s.o)}<div class="t"><b>${esc(s.n)}</b><span>${s.alt ? s.alt+' m · ' : ''}${s.lat.toFixed(3)}, ${s.lon.toFixed(3)}${stationOf(s) ? ' · Holfuy ' + esc(stationOf(s).n) : ''}</span></div>
@@ -768,7 +897,13 @@ function renderProfiles(){
   $('#profiles').innerHTML = profButtons(cur, 'data-prof');
   if (cur === 'custom') $('#customBox').open = true;
 }
-function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 2200); }
+function toast(msg, undo){
+  const el = $('#toast');
+  ([...document.querySelectorAll('dialog[open]')].pop() || document.body).append(el);
+  el.textContent = msg;
+  if (undo){ const b = document.createElement('button'); b.type = 'button'; b.textContent = t('Anulează'); b.onclick = () => { el.hidden = true; undo(); }; el.append(b); }
+  el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => el.hidden = true, undo ? 5000 : 2200);
+}
 
 /* ---------- jurnal ---------- */
 /* O intrare = o zi de zbor pe o locație: {id, date: 'AAAA-LL-ZZ', site, minutes}. Salvat doar pe acest telefon. */
@@ -784,6 +919,12 @@ const zile = n => n === 1 ? t('1 zi') : t('{n} zile', {n});
 
 function openLog(){ logSite = null; renderLog(); $('#dlgLog').showModal(); syncOnOpen(); }
 function renderLog(){
+  if (!flights.length){
+    $('#logBody').innerHTML = `<p class="onb-lead" style="margin:4px 0 6px">${t('Încă nu ai nimic notat.')}</p>
+      <p class="hint" style="margin:0">${t('Notează o zi de zbor cu „Adaugă zi de zbor”, sau cu „Am zburat aici” din pagina unei decolări. Poți trece și zborurile mai vechi.')}</p>
+      <div class="actions" style="margin-bottom:16px"><button class="btn primary" id="addFlight" type="button">${t('+ Adaugă zi de zbor')}</button><button class="btn" id="importXlsx" type="button">Import Excel</button></div>` + syncPanel();
+    return;
+  }
   const year = String(new Date().getFullYear()), inYear = flights.filter(f => f.date.startsWith(year));
   const places = new Set(flights.map(f => f.site)).size;
   let html = syncPanel() + `<div class="stats"><div><b>${fmtDur(total(flights))}</b><span>${t('în aer')}</span></div><div><b>${flights.length}</b><span>${t(flights.length === 1 ? 'zi de zbor' : 'zile de zbor')}</span></div><div><b>${places}</b><span>${t(places === 1 ? 'locație' : 'locații')}</span></div></div>
@@ -1171,12 +1312,22 @@ document.addEventListener('click', e => {
   }
   if (btn.matches('[data-open-edit]') || btn.id === 'edit') return openEdit();
   if (btn.id === 'refresh') return load(true);
-  if (btn.matches('.day')){ dayIdx = +btn.dataset.i; render(); if (dayIdx === 0) scrollToNow(); else $('#board').scrollLeft = 0; return; }
+  if (btn.matches('.day')){ dayIdx = +btn.dataset.i; return goToDay(); }
   if (btn.matches('.cell[data-h]')) return openCell(+btn.dataset.site, btn.dataset.h);
   if (btn.matches('.site')) return openSite(+btn.dataset.site);
-  if (btn.matches('.wk')){ dayIdx = +btn.dataset.day; btn.closest('dialog').close(); render(); if (dayIdx === 0) scrollToNow(); else $('#board').scrollLeft = 0; return; }
+  if (btn.matches('.wk')){ dayIdx = +btn.dataset.day; btn.closest('dialog').close(); return goToDay(); }
+  if (btn.dataset.boardview){ boardView = btn.dataset.boardview; store.set('vld.view', boardView); return goToDay(); }
+  if (btn.id === 'sortBest'){ sortBest = !sortBest; store.set('vld.sortBest', sortBest); return render(); }
+  if (btn.dataset.sumsite != null) return showSiteHours(+btn.dataset.sumsite);
+  if (btn.id === 'navBoard'){ for (const dl of document.querySelectorAll('dialog[open]')) dl.close(); scrollTo(0, 0); return; }
+  if (btn.id === 'settingsOpen') return openSettings();
+  if (btn.id === 'helpOpen') return $('#dlgHelp').showModal();
   if (btn.dataset.mv != null){ const i = +btn.dataset.mv, j = i + +btn.dataset.d; [sites[i], sites[j]] = [sites[j], sites[i]]; saveSites(); renderMyList(); render(); return; }
-  if (btn.dataset.del != null){ const [s] = sites.splice(+btn.dataset.del, 1); saveSites(); renderMyList(); render(); toast(t('{n} a fost șters', {n: s.n})); return; }
+  if (btn.dataset.del != null){
+    const i = +btn.dataset.del, [s] = sites.splice(i, 1); saveSites(); renderMyList(); render();
+    toast(t('{n} a fost șters', {n: s.n}), () => { sites.splice(i, 0, s); saveSites(); renderMyList(); render(); toast(t('{n} e din nou în listă', {n: s.n})); });
+    return;
+  }
   if (btn.dataset.add != null){ const {c, ...s} = structuredClone(addable[+btn.dataset.add]); if (sites.some(x => key(x) === key(s))) return toast(t('{n} e deja în listă', {n: s.n})); sites.push(s); map?.closePopup(); saveSites(); renderMyList(); toast(t('{n} a fost adăugat', {n: s.n})); load(); return; }
   if (btn.dataset.rose != null){ const i = +btn.dataset.rose; manualRose[i] = (manualRose[i] + 1) % 3; renderManualRose(); $(`[data-rose="${i}"]`).focus(); return; }
   if (btn.id === 'mapOpen') return openMap();
@@ -1589,6 +1740,7 @@ for (const d of document.querySelectorAll('dialog')){
   d.addEventListener('click', e => { if (e.target === d) d.close(); });
 }
 $('#dlgEdit').addEventListener('close', () => render());
+$('#dlgSettings').addEventListener('close', () => render());
 document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
 setInterval(() => { if (!loading && fc) $('#status').textContent = t('Actualizat {t} · Open-Meteo', {t: agoTxt(fc.at)}); }, 60000);
 
