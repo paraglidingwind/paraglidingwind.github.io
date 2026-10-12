@@ -216,7 +216,6 @@
   "Conectarea la Google a expirat sau a fost anulată.": "The Google sign-in expired or was cancelled.",
   "Sincronizarea nu a reușit. Verifică internetul și încearcă din nou.": "Sync failed. Check your connection and try again.",
   "Jurnalul pe toate dispozitivele.": "Your log on every device.",
-  "Conectează-te cu Google și jurnalul se păstrează în Google Drive-ul tău. Aplicația vede doar fișierul ei; nimeni altcineva nu are acces.": "Sign in with Google and your log is kept in your own Google Drive. The app only sees its own file; nobody else has access.",
   "Detalii": "Details",
   "Continuă cu Google": "Continue with Google",
   "Sincronizez cu Drive-ul…": "Syncing with Drive…",
@@ -398,5 +397,6 @@
   "Colțul marcat: o avertizare (vânt tare la altitudine, furtună, decolare fără direcții). Atinge celula ca să vezi motivul.": "Marked corner: a warning (strong wind aloft, storm, takeoff without directions). Tap the cell to see why.",
   "Orele estompate: noapte, sau ore deja trecute azi.": "Faded hours: night, or hours already past today.",
   "Arată toată ziua pentru fiecare decolare, cu fereastra cea mai bună. „Favorabil” cere minimum 2 ore bune la rând. Atinge o decolare ca să-i vezi orele.": "Shows the whole day for each takeoff, with its best window. “Favourable” needs at least 2 good hours in a row. Tap a takeoff to see its hours.",
-  "Navigare": "Navigation"
+  "Navigare": "Navigation",
+  "Conectează-te cu Google și jurnalul se păstrează în Google Drive-ul tău, ca fișier Excel, la fel ca exportul. Aplicația vede doar fișierul ei; nimeni altcineva nu are acces.": "Sign in with Google and your log is kept in your own Google Drive, as an Excel file just like the export. The app only sees its own file; nobody else has access."
 }
