@@ -7,7 +7,8 @@ cd "$(dirname "$0")/.."
 REPO=paraglidingwind-test/paraglidingwind-test.github.io
 EMAIL=$(git config user.email); NAME=$(git config user.name)
 python3 build.py >/dev/null
-SRC="$(git branch --show-current) $(git rev-parse --short HEAD)$(git status --porcelain src data build.py | grep -q . && echo +)"
+DIRTY=$(git status --porcelain src data build.py | grep -q . && echo + || true)   # „+” = cu modificări necomise
+SRC="$(git branch --show-current) $(git rev-parse --short HEAD)$DIRTY"
 TMP=$(mktemp -d)
 if ! git clone -q "https://github.com/$REPO.git" "$TMP" 2>/dev/null; then git -C "$TMP" init -q -b main; git -C "$TMP" remote add origin "https://github.com/$REPO.git"; fi
 find "$TMP" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
