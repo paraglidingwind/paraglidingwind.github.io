@@ -768,9 +768,10 @@ function agoTxt(at){
   if (m < 60) return t('acum {m} min', {m});
   return new Date(at).toLocaleString(LOC, {weekday:'short', hour:'2-digit', minute:'2-digit'});
 }
+/* Azi, tabla începe cu ora curentă (prima coloană de lângă nume); orele trecute rămân la stânga, estompate. */
 function scrollToNow(){
-  const c = document.getElementById('nowcol'), board = $('#board');
-  if (c) board.scrollLeft = Math.max(0, c.offsetLeft - board.querySelector('.corner').offsetWidth - 52);
+  const c = document.getElementById('nowcol'), board = $('#board'), corner = board.querySelector('.corner');
+  if (c && corner) board.scrollLeft = Math.max(0, c.offsetLeft - corner.offsetWidth);
 }
 
 /* ---------- detalii ---------- */
@@ -1591,7 +1592,8 @@ for (const d of document.querySelectorAll('dialog')){
 }
 $('#dlgEdit').addEventListener('close', () => render());
 $('#dlgSettings').addEventListener('close', () => render());
-document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
+// La revenirea în aplicație (ex. după o oră), azi tabla sare din nou la ora curentă.
+document.addEventListener('visibilitychange', () => { if (!document.hidden) load().then(() => { if (dayIdx === 0) scrollToNow(); }); });
 setInterval(() => { if (!loading && fc) $('#status').textContent = t('Actualizat {t} · Open-Meteo', {t: agoTxt(fc.at)}); }, 60000);
 
 /* Mutarea de pe adresa veche (camarasanvlad89.github.io/vant-la-decolare): pagina de acolo trimite datele în #migrate=…
