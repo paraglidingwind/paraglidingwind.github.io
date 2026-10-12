@@ -398,5 +398,10 @@
   "Orele estompate: noapte, sau ore deja trecute azi.": "Faded hours: night, or hours already past today.",
   "Arată toată ziua pentru fiecare decolare, cu fereastra cea mai bună. „Favorabil” cere minimum 2 ore bune la rând. Atinge o decolare ca să-i vezi orele.": "Shows the whole day for each takeoff, with its best window. “Favourable” needs at least 2 good hours in a row. Tap a takeoff to see its hours.",
   "Navigare": "Navigation",
-  "Conectează-te cu Google și jurnalul se păstrează în Google Drive-ul tău, ca fișier Excel, la fel ca exportul. Aplicația vede doar fișierul ei; nimeni altcineva nu are acces.": "Sign in with Google and your log is kept in your own Google Drive, as an Excel file just like the export. The app only sees its own file; nobody else has access."
+  "Conectează-te cu Google și jurnalul se păstrează în Google Drive-ul tău, ca fișier Excel, la fel ca exportul. Aplicația vede doar fișierul ei; nimeni altcineva nu are acces.": "Sign in with Google and your log is kept in your own Google Drive, as an Excel file just like the export. The app only sees its own file; nobody else has access.",
+  "Pe ani": "By year",
+  "Anul {y}": "Year {y}",
+  "Arată toți anii": "Show all years",
+  "Ani": "Years",
+  "Atinge un an ca să vezi zilele lui. Barele arată timpul în aer pe fiecare lună.": "Tap a year to see its days. The bars show airtime in each month."
 }
