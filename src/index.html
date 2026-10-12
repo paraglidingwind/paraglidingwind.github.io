@@ -291,11 +291,6 @@ details.custom summary{min-height:44px;display:flex;align-items:center;font-weig
 .sumrow .wt{margin-top:5px;font-size:13.5px}
 .strip i.past,.grid .past{opacity:.45}
 .grid tr.hl th,.grid tr.hl td .cell{box-shadow:inset 0 0 0 2px var(--accent)}
-/* UI-04: banda de zile spune câte decolări sunt favorabile */
-.day .bar{display:flex;gap:1px;height:6px;margin-top:6px;border-radius:3px;overflow:hidden;width:64px;background:var(--line)}
-.day .bar i{display:block;height:100%}
-.day .cnt{margin-top:4px;font-size:12px;font-weight:600;color:var(--muted)}
-.day .cnt.go{color:var(--go)} .day .cnt.maybe{color:var(--maybe)}
 .helplist{margin:0;padding-left:18px} .helplist li{margin:0 0 6px}
 .seg2.lang a{display:grid;place-items:center;min-height:44px;padding:0 16px;font-weight:600;color:var(--muted);text-decoration:none}
 .seg2.lang a[aria-current="true"]{background:var(--ink);color:var(--bg)}
@@ -691,14 +686,11 @@ function render(){
   b.hidden = !lastError;
   if (lastError) b.textContent = t('Nu am putut descărca prognoza. {e}', {e: lastError}) + (fc ? t(' Arăt datele de la {t}.', {t: new Date(fc.at).toLocaleTimeString(LOC,{hour:'2-digit',minute:'2-digit'})}) : t(' Apasă ↻ pentru a încerca din nou.'));
 
-  // zile (UI-04): câte decolări sunt favorabile în ziua respectivă, cu o bară în culorile stărilor
+  // zile: câte un punct pe decolare, în culoarea zilei ei (ca înainte; decizia din 12 oct.)
   $('#days').innerHTML = ds.map((d, i) => {
-    const dt = new Date(d+'T12:00'), sts = sites.map(s => bestOfDay(s, d)), n = k => sts.filter(x => x === k).length;
-    const cnt = n('go') ? [n('go') === 1 ? t('1 favorabilă') : t('{n} favorabile', {n: n('go')}), 'go']
-      : n('maybe') ? [n('maybe') === 1 ? t('1 marginală') : t('{n} marginale', {n: n('maybe')}), 'maybe'] : [t('nimic bun'), ''];
-    const bar = ['go', 'maybe', 'calm', 'no'].map(k => n(k) ? `<i class="${k}" style="flex:${n(k)}"></i>` : '').join('');
-    return `<button class="day" data-i="${i}" aria-pressed="${i===dayIdx}"><b>${dayName(d,i)}</b><span>${dt.getDate()} ${dt.toLocaleDateString(LOC,{month:'short'}).replace('.','')}</span>`
-      + (sites.length ? `<span class="bar" aria-hidden="true">${bar}</span><span class="cnt ${cnt[1]}">${cnt[0]}</span>` : '') + `</button>`;
+    const dt = new Date(d+'T12:00');
+    const dots = sites.map(s => `<i class="${bestOfDay(s, d)}"></i>`).join('');
+    return `<button class="day" data-i="${i}" aria-pressed="${i===dayIdx}"><b>${dayName(d,i)}</b><span>${dt.getDate()} ${dt.toLocaleDateString(LOC,{month:'short'}).replace('.','')}</span><span class="dots">${dots}</span></button>`;
   }).join('');
   for (const b of document.querySelectorAll('[data-boardview]')) b.setAttribute('aria-pressed', String(b.dataset.boardview === boardView));
   $('#sortBest').hidden = boardView !== 'summary'; $('#sortBest').setAttribute('aria-pressed', String(sortBest));
