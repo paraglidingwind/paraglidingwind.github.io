@@ -222,7 +222,7 @@ const SHOTS = {
   setari: {state: BOARD, h: 1000, run: `${board}
     __el('#settingsOpen').click(); await __until(() => document.querySelector('#dlgSettings[open] .prof'));
     __mark([['#profiles', 'tr', {dx: -8, dy: 6}], ['#customBox summary', 'r', {dx: -10}], ['#dlgSettings .two', 'tr', {dx: -8, dy: 6}],
-      ['#langSeg', 'tr', {dx: -4, dy: 4}], ['#dlgSettings a[href$="ghid.html"], #dlgSettings a[href$="guide.html"]', 'tr', {dx: -4, dy: 4}]]);`,
+      ['#langSeg', 'tr', {dx: -4, dy: 4}]]);`,
     clip: `return __sheet()`},
   // Jurnalul, pe zile.
   jurnal: {state: BOARD, h: 900, run: `${board}

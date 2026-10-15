@@ -41,6 +41,6 @@ test('legăturile #… duc la secțiuni existente, inclusiv cele din aplicație'
   }
   const app = read('src/index.html'), have = new Set(ids(pages.ro));
   const links = [...app.matchAll(/(?:ghid\.html|\$\{GUIDE\})#([\w-]+)/g)].map(m => m[1]);
-  assert.ok(links.length >= 2);
+  assert.ok(links.length >= 1);
   for (const id of links) assert.ok(have.has(id), 'aplicația trimite la #' + id);
 });
