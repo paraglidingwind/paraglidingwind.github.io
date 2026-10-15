@@ -180,7 +180,7 @@ const SHOTS = {
     scrollToNow(); await __sleep(100);
     __mark([['.day', 'tr', {dx: -6, dy: 4}], ['.viewbar .seg2', 'r', {dx: 6}], ['.grid tbody th .site', 'br', {i: 1, dx: -12, dy: -10}],
       ['#nowcol', 't', {dy: -8}], ['.cell[data-site="1"][data-h="13"]', 'br', {ring: true, radius: 4, dx: -4, dy: -4}],
-      ['#refresh', 'l', {dx: -8}], ['.tabbar', 't', {dy: 2}]]);`},
+      ['#refresh', 'b', {dy: 2}], ['#topLang', 'b', {dy: 2}], ['.tabbar', 't', {dy: 2}]]);`},
   // O celulă mărită, cu părțile ei.
   celula: {state: BOARD, h: 420, run: `${board}
     const src = __el('.cell[data-site="${PRIA}"][data-h="12"]'), st = document.createElement('div');
