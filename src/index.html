@@ -331,7 +331,7 @@ details.hfbox .hf-in{padding:0 12px 12px}
   <div class="days" id="days" role="toolbar" aria-label="Alege ziua"></div>
   <div class="viewbar">
     <span class="seg2" role="group" aria-label="Vedere"><button type="button" data-boardview="hours" aria-pressed="true">Pe ore</button><button type="button" data-boardview="summary" aria-pressed="false">Pe scurt</button></span>
-    <button type="button" class="chipb" id="sortBest" aria-pressed="false" hidden>Cele mai bune primele</button>
+    <button type="button" class="chipb" id="sortBest" aria-pressed="false">Cele mai bune primele</button>
   </div>
   <div class="board" id="board"></div>
   <div class="legend">
@@ -716,7 +716,7 @@ function render(){
     return `<button class="day" data-i="${i}" aria-pressed="${i===dayIdx}"><b>${dayName(d,i)}</b><span>${dt.getDate()} ${dt.toLocaleDateString(LOC,{month:'short'}).replace('.','')}</span><span class="dots">${dots}</span></button>`;
   }).join('');
   for (const b of document.querySelectorAll('[data-boardview]')) b.setAttribute('aria-pressed', String(b.dataset.boardview === boardView));
-  $('#sortBest').hidden = boardView !== 'summary'; $('#sortBest').setAttribute('aria-pressed', String(sortBest));
+  $('#sortBest').setAttribute('aria-pressed', String(sortBest));
 
   // tabla
   const board = $('#board');
@@ -736,7 +736,7 @@ function render(){
   const past = h => nowH != null && h < nowH ? ' past' : '';
   let html = `<table class="grid"><thead><tr><th class="corner">${dayName(d,dayIdx)}</th>`;
   html += hs.map(h => `<th class="${h===nowH?'now':''}${past(h)}" ${h===nowH?'id="nowcol"':''}>${h}</th>`).join('') + '</tr></thead><tbody>';
-  sites.forEach((s, si) => {
+  for (const {s, si} of boardRows(d)){
     html += `<tr><th><button class="site" data-site="${si}">${roseSvg(s.o)}<span><b>${esc(s.n)}</b><span>${s.alt ? s.alt + ' m' : ''}${stationOf(s) ? '<em class="live">LIVE</em>' : ''}</span>${s.o.some(Boolean) ? '' : `<span class="nodir">${t('fără direcții')}</span>`}</span></button></th>`;
     for (const h of hs){
       const {w, r} = rateAt(s, d, h);
@@ -746,15 +746,21 @@ function render(){
         + (r.warn.length ? '<span class="flag" aria-hidden="true"></span>' : '') + `<span class="ic">${skySvg(sky(w).icon)}<svg class="arr" viewBox="0 0 24 24" style="transform:rotate(${(w.wd+180)%360}deg)">${ARROW}</svg></span><b>${Math.round(w.ws)}</b>${rain}</button></td>`;
     }
     html += '</tr>';
-  });
+  }
   board.innerHTML = html + '</tbody></table>';
   fitCells();
 }
+/* Rândurile tablei, în ambele vederi: ordinea din listă sau, cu „Cele mai bune primele”, întâi decolările cu fereastră
+   favorabilă în ziua aleasă (apoi marginal, calm, nu; la egalitate, mai multe ore favorabile, apoi ordinea din listă).
+   si rămâne indicele din listă, ca atingerile să ducă la decolarea corectă. */
+const BEST_ORDER = {go: 0, maybe: 1, calm: 2, no: 3, na: 4};
+function boardRows(d){
+  const rows = sites.map((s, si) => ({s, si, sm: daySummary(s, d)})), goH = r => r.sm.sts.filter(x => x === 'go').length;
+  return sortBest ? rows.sort((a, b) => BEST_ORDER[a.sm.st] - BEST_ORDER[b.sm.st] || goH(b) - goH(a)) : rows;
+}
 /* UI-03: toată ziua pe ecran, fără derulare: o bandă de ore pentru fiecare decolare și fereastra ei cea mai bună. */
 function renderSummary(d, hs, nowH){
-  const order = {go: 0, maybe: 1, calm: 2, no: 3, na: 4};
-  let rows = sites.map((s, si) => ({s, si, sm: daySummary(s, d)}));
-  if (sortBest) rows = rows.sort((a, b) => order[a.sm.st] - order[b.sm.st] || b.sm.sts.filter(x => x === 'go').length - a.sm.sts.filter(x => x === 'go').length);
+  const rows = boardRows(d);
   const past = i => nowH != null && hs[i] < nowH ? ' past' : '';
   $('#board').innerHTML = `<div class="sumhead"><span></span><span class="strip" style="--n:${hs.length}">${hs.map((h, i) => `<em>${i % 3 === 0 ? h : ''}</em>`).join('')}</span></div>`
     + rows.map(({s, si, sm}) => `<button class="sumrow" type="button" data-sumsite="${si}"><span class="sn">${roseSvg(s.o)}<span><b>${esc(s.n)}</b><small>${s.alt ? s.alt + ' m' : ''}${stationOf(s) ? '<em class="live">LIVE</em>' : ''}</small></span></span>`
@@ -781,7 +787,7 @@ function showSiteHours(si){
   const i = [sm.sts.indexOf('go'), sm.sts.indexOf('maybe')].find(x => x >= 0) ?? 0, b = $('#board');
   const cw = parseFloat(getComputedStyle(b).getPropertyValue('--cell-w')) || 52;
   b.scrollLeft = Math.max(0, (i - 1) * cw);
-  const tr = b.querySelectorAll('tbody tr')[si];
+  const tr = b.querySelector(`tbody .site[data-site="${si}"]`)?.closest('tr');   // cu „Cele mai bune primele”, rândul nu e pe poziția si
   if (tr){ tr.scrollIntoView({block: 'nearest'}); tr.classList.add('hl'); setTimeout(() => tr.classList.remove('hl'), 1600); }
 }
 const goToDay = () => { render(); if (dayIdx === 0) scrollToNow(); else scrollToBest(); };
