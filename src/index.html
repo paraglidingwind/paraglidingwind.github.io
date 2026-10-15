@@ -260,6 +260,7 @@ dialog.tall .sheet .body{flex:1;min-height:0;display:flex;flex-direction:column}
 #pkMap{position:absolute;inset:0;background:var(--sunk)}
 .pk-note{margin-top:12px;padding:12px;border-radius:12px;background:var(--sunk);font-size:14px}
 .pk-note b{display:block;margin-bottom:4px}
+.onb-lang{display:flex;justify-content:center;margin:2px 0 6px}
 .onb-hero{display:flex;justify-content:center;margin:8px 0 18px}
 .onb-hero svg{width:120px;height:120px}
 .onb-lead{margin:0;font-size:16px;color:var(--ink)}
@@ -1414,7 +1415,10 @@ function renderOnb(){
   $('#onbTitle').textContent = [t('Bun venit'), t('Alege decolările'), t('Ce limite ai?')][onb.step];
   if (pick.mapObj && onb.step !== 1){ pick.mapObj.remove(); pick.mapObj = null; }
   if (onb.step === 0){
-    body.innerHTML = `<div class="onb-hero">${roseSvg([0,1,2,2,1,0,0,0], 'rose')}</div>
+    // Limba se alege chiar aici: Setările sunt în spatele acestui ecran. Linkul reîncarcă pagina în limba aleasă și o ține minte.
+    body.innerHTML = `<div class="onb-lang"><span class="seg2 lang" role="group" aria-label="${t('Limba')}">${[['ro', 'Română'], ['en', 'English']].map(([l, n]) =>
+        `<a href="?lang=${l}" data-lang="${l}" lang="${l}" aria-current="${l === LANG}">${n}</a>`).join('')}</span></div>
+      <div class="onb-hero">${roseSvg([0,1,2,2,1,0,0,0], 'rose')}</div>
       <p class="onb-lead">${t('Vântul pe ore la decolările tale, colorat după orientarea fiecăreia. Gratuit, fără cont.')}</p>
       <div class="stack">
         <button class="btn primary" type="button" data-onb="go" data-zone="near">${t('📍 Decolări lângă mine')}</button>

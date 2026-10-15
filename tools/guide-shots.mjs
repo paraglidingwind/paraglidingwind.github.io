@@ -153,7 +153,7 @@ const SHOTS = {
   // Prima pornire: bun venit.
   start: {state: {}, run: `
     await __until(() => document.querySelector('#dlgOnb[open] [data-onb="go"]'));
-    __mark([['[data-onb="go"][data-zone="near"]:not([data-onbview])', 'r', {dx: -16}], ['[data-onbview="map"]', 'r', {dx: -16}],
+    __mark([['.onb-lang .seg2', 'r', {dx: 16}], ['[data-onb="go"][data-zone="near"]:not([data-onbview])', 'r', {dx: -16}], ['[data-onbview="map"]', 'r', {dx: -16}],
       ['[data-onb="go"][data-zone="country"]', 'r', {dx: -16}], ['[data-onb="import"]', 'r', {dx: 16}]]);`},
   // Alegerea decolărilor: lângă mine, listă.
   alege: {state: {}, run: `
