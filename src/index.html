@@ -752,11 +752,17 @@ function render(){
 }
 /* Rândurile tablei, în ambele vederi: ordinea din listă sau, cu „Cele mai bune primele”, întâi decolările cu fereastră
    favorabilă în ziua aleasă (apoi marginal, calm, nu; la egalitate, mai multe ore favorabile, apoi ordinea din listă).
+   Textul din „Pe scurt” descrie toată ziua; doar ordinea de azi se uită la orele rămase.
    si rămâne indicele din listă, ca atingerile să ducă la decolarea corectă. */
 const BEST_ORDER = {go: 0, maybe: 1, calm: 2, no: 3, na: 4};
 function boardRows(d){
-  const rows = sites.map((s, si) => ({s, si, sm: daySummary(s, d)})), goH = r => r.sm.sts.filter(x => x === 'go').length;
-  return sortBest ? rows.sort((a, b) => BEST_ORDER[a.sm.st] - BEST_ORDER[b.sm.st] || goH(b) - goH(a)) : rows;
+  const rows = sites.map((s, si) => ({s, si, sm: daySummary(s, d)}));
+  if (!sortBest) return rows;
+  // Azi contează doar orele rămase: o fereastră care a trecut deja nu mai urcă decolarea în față.
+  const from = d === localDate(new Date()) ? String(new Date().getHours()).padStart(2, '0') : null;
+  for (const r of rows) r.rk = from ? daySummary(r.s, d, from) : r.sm;
+  const goH = r => r.rk.sts.filter(x => x === 'go').length;
+  return rows.sort((a, b) => BEST_ORDER[a.rk.st] - BEST_ORDER[b.rk.st] || goH(b) - goH(a));
 }
 /* UI-03: toată ziua pe ecran, fără derulare: o bandă de ore pentru fiecare decolare și fereastra ei cea mai bună. */
 function renderSummary(d, hs, nowH){
@@ -831,8 +837,8 @@ function openCell(si, h){
   $('#dlgCell').showModal();
 }
 /* Rezumatul unei zile pentru un sit, din prognoza salvată (summarize() e în core.js). Cele 2 ore de după contează pentru furtuni. */
-function daySummary(site, d){
-  const hs = hours(), last = hs[hs.length - 1];
+function daySummary(site, d, from){
+  const hs = hours().filter(h => !from || h >= from), last = hs[hs.length - 1];   // from = „14”: doar orele de la 14 încolo
   return summarize(site, hs, hs.map(h => hourData(site, `${d}T${h}:00`)), settings, [1, 2].map(k => hourData(site, `${d}T${hPlus(last, k)}:00`)));
 }
 /* Direcțiile unei decolări, în cuvinte. */
