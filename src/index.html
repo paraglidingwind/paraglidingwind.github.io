@@ -277,7 +277,7 @@ details.custom summary{min-height:44px;display:flex;align-items:center;font-weig
 .linkbtn{border:0;background:none;padding:0;color:var(--accent);font-weight:700;text-decoration:underline;min-height:44px}
 .site .nodir{display:inline-block}
 /* UI-05: navigarea de jos, cu etichete. Pe ecrane late devine o bară plutitoare, centrată. */
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:5;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:5;display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
 .tabbar button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:60px;border:0;background:none;color:var(--muted);font:600 12.5px/1 var(--f-ui)}
 .tabbar svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .tabbar button[aria-current="page"]{color:var(--accent)}
@@ -343,6 +343,7 @@ details.hfbox .hf-in{padding:0 12px 12px}
   <button type="button" id="log"><svg viewBox="0 0 24 24"><path d="M6 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6z"/><path d="M9 3v18"/><path d="M12.5 8h3.5M12.5 12h3.5"/></svg><span>Jurnal</span></button>
   <button type="button" id="edit"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>Situri</span></button>
   <button type="button" id="settingsOpen"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span>Setări</span></button>
+  <button type="button" id="helpTab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.4c-.6.3-1 .8-1 1.5v.5"/><path d="M12 17.3v.1"/></svg><span>Ajutor</span></button>
 </nav>
 
 <dialog id="dlgCell"><div class="sheet">
@@ -444,9 +445,6 @@ details.hfbox .hf-in{padding:0 12px 12px}
     </div>
     <h3>Limba</h3>
     <div class="seg2 lang" id="langSeg"><a href="?lang=ro" data-lang="ro">Română</a><a href="?lang=en" data-lang="en">English</a></div>
-    <h3>Ajutor</h3>
-    <a class="btn" href="ghid.html">Ghid de utilizare</a>
-    <p class="hint">Pas cu pas, cu imagini: tabla, culorile, decolările, jurnalul.</p>
     <h3>Despre</h3>
     <p class="hint" style="margin:0">Prognoza: Open-Meteo · Decolări: ParaglidingEarth (CC BY-SA) · Vânt live: Holfuy</p>
     <div class="links"><a class="btn small" href="confidentialitate.html">Confidențialitate</a><a class="btn small" href="termeni.html">Termeni</a></div>
@@ -455,8 +453,11 @@ details.hfbox .hf-in{padding:0 12px 12px}
 </div></dialog>
 
 <dialog id="dlgHelp"><div class="sheet">
-  <header><h2>Cum citești tabla</h2><button class="iconbtn" data-close aria-label="Închide"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+  <header><h2>Ajutor</h2><button class="iconbtn" data-close aria-label="Închide"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
   <div class="body">
+    <a class="btn primary" href="ghid.html" style="width:100%">Ghid de utilizare</a>
+    <p class="hint">Pas cu pas, cu imagini: tabla, culorile, decolările, jurnalul.</p>
+    <h3>Cum citești tabla</h3>
     <p class="hint" style="margin:0 0 10px">Fiecare celulă e o oră la o decolare:</p>
     <ul class="helplist">
       <li>Pictograma de sus: cerul și tipul de nori.</li>
@@ -469,7 +470,6 @@ details.hfbox .hf-in{padding:0 12px 12px}
     <h3>Pe scurt</h3>
     <p class="hint" style="margin:0">Arată toată ziua pentru fiecare decolare, cu fereastra cea mai bună. „Favorabil” cere minimum 2 ore bune la rând. Atinge o decolare ca să-i vezi orele.</p>
     <p class="disclaimer">Prognoză de model, nu o garanție. Decizia îți aparține, la decolare.</p>
-    <div class="links"><a class="btn small" href="ghid.html#board">Ghidul complet, cu imagini</a></div>
   </div>
 </div></dialog>
 
@@ -1211,7 +1211,7 @@ document.addEventListener('click', e => {
   if (btn.dataset.sumsite != null) return showSiteHours(+btn.dataset.sumsite);
   if (btn.id === 'navBoard'){ for (const dl of document.querySelectorAll('dialog[open]')) dl.close(); scrollTo(0, 0); return; }
   if (btn.id === 'settingsOpen') return openSettings();
-  if (btn.id === 'helpOpen') return $('#dlgHelp').showModal();
+  if (btn.id === 'helpOpen' || btn.id === 'helpTab') return $('#dlgHelp').showModal();
   if (btn.dataset.mv != null){ const i = +btn.dataset.mv, j = i + +btn.dataset.d; [sites[i], sites[j]] = [sites[j], sites[i]]; saveSites(); renderMyList(); render(); return; }
   if (btn.dataset.del != null){
     const i = +btn.dataset.del, [s] = sites.splice(i, 1); saveSites(); renderMyList(); render();
