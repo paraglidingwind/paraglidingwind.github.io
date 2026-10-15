@@ -281,11 +281,19 @@ details.custom summary{min-height:44px;display:flex;align-items:center;font-weig
 /* UI-05: navigarea de jos, cu etichete. Pe ecrane late devine o bară plutitoare, centrată. */
 /* Jos: bara cu butoane, iar sub ea, în afara ei, Confidențialitate și Termeni cu litere mici. */
 .bottom{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--bg);padding-bottom:env(safe-area-inset-bottom,0px)}
-.tabbar{display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.tabbar{display:grid;grid-template-columns:repeat(6,1fr);background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .tabbar button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:56px;border:0;background:none;color:var(--muted);font:600 12.5px/1 var(--f-ui)}
 .tabbar svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .tabbar button[aria-current="page"]{color:var(--accent)}
 .legal{display:flex;justify-content:center;gap:14px}
+/* Sugestii: formularul pregătește un email; îl trimite utilizatorul, din aplicația lui de email. */
+#ideaText{min-height:132px;resize:vertical}
+.tech{display:flex;gap:10px;align-items:flex-start;margin:12px 0 0;font-size:13px;color:var(--muted);min-height:44px}
+.tech input{width:20px;height:20px;margin:0;flex:0 0 auto;accent-color:var(--accent)}
+.ideanote{margin-top:14px;padding:12px 14px;border-radius:12px;background:var(--sunk)}
+.ideanote p{margin:0 0 6px}
+.ideanote a{color:var(--accent);font-weight:600}
+#ideaKind{display:inline-flex}
 .legal a{display:inline-flex;align-items:center;min-height:24px;padding:0 6px;font-size:11.5px;color:var(--muted);text-decoration:none}
 @media (min-width: 900px){ .bottom{left:50%;right:auto;transform:translateX(-50%);width:520px;bottom:6px;background:none}
   .tabbar{border:1px solid var(--line);border-radius:16px;box-shadow:0 6px 24px rgb(0 0 0 / .12)} }
@@ -352,6 +360,7 @@ details.hfbox .hf-in{padding:0 12px 12px}
   <button type="button" id="edit"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>Situri</span></button>
   <button type="button" id="settingsOpen"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span>Setări</span></button>
   <button type="button" id="helpTab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.4c-.6.3-1 .8-1 1.5v.5"/><path d="M12 17.3v.1"/></svg><span>Ajutor</span></button>
+  <button type="button" id="ideaTab"><svg viewBox="0 0 24 24"><path d="M20 15a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/><path d="M8.5 9h7M8.5 12.5h4.5"/></svg><span>Sugestii</span></button>
 </nav>
 <div class="legal"><a href="confidentialitate.html">Confidențialitate</a><a href="termeni.html">Termeni</a></div>
 </div>
@@ -483,6 +492,27 @@ details.hfbox .hf-in{padding:0 12px 12px}
   </div>
 </div></dialog>
 
+<dialog id="dlgIdea"><div class="sheet">
+  <header><h2>Sugestii</h2><button class="iconbtn" data-close aria-label="Închide"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+  <div class="body">
+    <form id="ideaForm" novalidate>
+      <p class="hint" style="margin:0">Ai o idee sau ai găsit ceva care nu merge? Scrie aici. Mesajul pleacă din aplicația ta de email, iar autorul aplicației îl citește.</p>
+      <label class="f">Despre ce e vorba</label>
+      <span class="seg2" role="group" aria-label="Despre ce e vorba" id="ideaKind"><button type="button" data-kind="idee" aria-pressed="true">Idee</button><button type="button" data-kind="problema" aria-pressed="false">Problemă</button><button type="button" data-kind="altceva" aria-pressed="false">Altceva</button></span>
+      <label class="f" for="ideaText">Mesajul tău</label>
+      <textarea class="in" id="ideaText" rows="6" maxlength="1500" placeholder="De exemplu: aș vrea vântul și în km/h."></textarea>
+      <label class="tech"><input type="checkbox" id="ideaTech" checked><span>Adaugă detalii tehnice (versiunea aplicației, limba, ecranul, browserul): ajută la găsirea problemelor.</span></label>
+      <p class="err" id="ideaErr" hidden></p>
+      <div class="actions"><button class="btn primary" type="submit">Trimite pe email</button></div>
+      <div class="ideanote" id="ideaSent" hidden>
+        <p><b>Aproape gata.</b> Se deschide aplicația ta de email cu mesajul pregătit; apasă Trimite acolo.</p>
+        <p class="hint">Nu s-a deschis nimic? Copiază mesajul și trimite-l la <a id="ideaAddr"></a>.</p>
+        <div class="actions" style="margin-top:6px"><button class="btn small" type="button" id="ideaCopy">Copiază mesajul</button></div>
+      </div>
+    </form>
+  </div>
+</div></dialog>
+
 <dialog id="dlgOnb" class="tall"><div class="sheet">
   <header><h2 id="onbTitle">Bun venit</h2><button class="iconbtn" data-close aria-label="Închide"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
   <div class="body" id="onbBody"></div>
@@ -535,6 +565,7 @@ const VERSION = '__VERSION__';
 const SKY_ICONS = __SKY_ICONS__;
 let HOLFUY = [];   // stațiile Holfuy din toată lumea, din holfuy.json (încărcat la pornire)
 const GOOGLE_CLIENT_ID = __GOOGLE_CLIENT_ID__;
+const FEEDBACK_EMAIL = 'feedback@paraglidingwind.com';   // redirecționată de Cloudflare Email Routing către autor
 const HOLFUY_MAX_KM = 5;
 const DIRS = LANG === 'en' ? ['N','NE','E','SE','S','SW','W','NW'] : ['N','NE','E','SE','S','SV','V','NV'];
 const DEFAULT_SETTINGS = {good:5, marg:7, calm:1, gust:9, spread:4, rain:0.2, from:8, to:20};
@@ -1200,6 +1231,35 @@ async function signOut(){
   saveFlights(); renderLog(); toast(t('Te-ai deconectat. Jurnalul e în siguranță în Drive.'));
 }
 
+/* ---------- sugestii ----------
+   Fără server: formularul pregătește un email către FEEDBACK_EMAIL și deschide aplicația de email a utilizatorului;
+   trimite el, de pe adresa lui. Nimic nu se păstrează în aplicație. */
+const IDEA_KINDS = {idee: 'Idee', problema: 'Problemă', altceva: 'Altceva'};
+let ideaKind = 'idee';
+function openIdea(){
+  $('#ideaErr').hidden = true; $('#ideaSent').hidden = true;
+  $('#ideaAddr').textContent = FEEDBACK_EMAIL; $('#ideaAddr').href = 'mailto:' + FEEDBACK_EMAIL;
+  $('#dlgIdea').showModal();
+}
+function ideaMail(){
+  const tech = $('#ideaTech').checked ? `\n\n—\n${t('Versiunea {v}', {v: VERSION})} · ${LANG} · ${innerWidth}×${innerHeight}\n${navigator.userAgent}` : '';
+  return {subject: `${t('Vânt la Decolare')} · ${t(IDEA_KINDS[ideaKind])}`, body: $('#ideaText').value.trim() + tech};
+}
+function copyIdea(){
+  const m = ideaMail();
+  navigator.clipboard.writeText(`${t('Către')}: ${FEEDBACK_EMAIL}\n${t('Subiect')}: ${m.subject}\n\n${m.body}`)
+    .then(() => toast(t('Mesajul a fost copiat')), () => toast(t('Nu am putut copia. Selectează textul și copiază-l de mână.')));
+}
+$('#ideaForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const err = $('#ideaErr');
+  if ($('#ideaText').value.trim().length < 5){ err.textContent = t('Scrie câteva cuvinte despre ce ai vrea.'); err.hidden = false; return; }
+  err.hidden = true;
+  const m = ideaMail();
+  location.href = `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(m.subject)}&body=${encodeURIComponent(m.body)}`;
+  $('#ideaSent').hidden = false;
+});
+
 /* ---------- evenimente ---------- */
 document.addEventListener('click', e => {
   const btn = e.target.closest('button'); if (!btn) return;
@@ -1234,6 +1294,9 @@ document.addEventListener('click', e => {
   if (btn.id === 'navBoard'){ for (const dl of document.querySelectorAll('dialog[open]')) dl.close(); scrollTo(0, 0); return; }
   if (btn.id === 'settingsOpen') return openSettings();
   if (btn.id === 'helpTab') return $('#dlgHelp').showModal();
+  if (btn.id === 'ideaTab') return openIdea();
+  if (btn.id === 'ideaCopy') return copyIdea();
+  if (btn.dataset.kind){ ideaKind = btn.dataset.kind; for (const b of document.querySelectorAll('#ideaKind button')) b.setAttribute('aria-pressed', String(b.dataset.kind === ideaKind)); return; }
   if (btn.dataset.mv != null){ const i = +btn.dataset.mv, j = i + +btn.dataset.d; [sites[i], sites[j]] = [sites[j], sites[i]]; saveSites(); renderMyList(); render(); return; }
   if (btn.dataset.del != null){
     const i = +btn.dataset.del, [s] = sites.splice(i, 1); saveSites(); renderMyList(); render();
