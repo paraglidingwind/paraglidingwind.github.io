@@ -436,5 +436,14 @@
   "Adresa de email nu pare corectă. Poți s-o lași goală.": "That email address doesn't look right. You can leave it empty.",
   "Se trimite…": "Sending…",
   "Ai trimis mai multe mesaje la rând. Încearcă din nou peste un minut.": "You've sent several messages in a row. Try again in a minute.",
-  "Mulțumim! Mesajul a fost trimis.": "Thank you! Your message was sent."
+  "Mulțumim! Mesajul a fost trimis.": "Thank you! Your message was sent.",
+  "Automat": "Automatic",
+  "Open-Meteo alege modelul potrivit locului. Pentru decolările din România: ICON-EU.": "Open-Meteo picks the right model for the place. For takeoffs in Romania: ICON-EU.",
+  "Serviciul meteo german (DWD): în Europa ICON-EU, după 5 zile ICON global.": "The German weather service (DWD): ICON-EU in Europe, ICON global after 5 days.",
+  "Centrul European, modelul implicit din Windy; aici pe grila datelor publice (~25 km), deci cifrele pot diferi puțin.": "The European Centre, Windy's default model; here on the public-data grid (~25 km), so the numbers can differ a little.",
+  "Serviciul meteo american (NOAA).": "The US weather service (NOAA).",
+  "Modelul meteo": "Weather model",
+  "Modelele dau cifre puțin diferite. Când diferă mult între ele, prognoza e nesigură.": "Models give slightly different numbers. When they differ a lot, the forecast is uncertain.",
+  "Modelul meteo: {m}": "Weather model: {m}",
+  "Model": "Model"
 }

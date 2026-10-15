@@ -462,6 +462,9 @@ details.hfbox .hf-in{padding:0 12px 12px}
       <div><label class="f" for="sFrom">De la ora</label><input class="in" id="sFrom" type="number" min="0" max="23" inputmode="numeric"></div>
       <div><label class="f" for="sTo">Până la ora</label><input class="in" id="sTo" type="number" min="0" max="23" inputmode="numeric"></div>
     </div>
+    <h3>Modelul meteo</h3>
+    <div class="profiles" id="models"></div>
+    <p class="hint">Modelele dau cifre puțin diferite. Când diferă mult între ele, prognoza e nesigură.</p>
     <h3>Limba</h3>
     <div class="seg2 lang" id="langSeg"><a href="?lang=ro" data-lang="ro">Română</a><a href="?lang=en" data-lang="en">English</a></div>
     <h3>Despre</h3>
@@ -572,7 +575,19 @@ const GOOGLE_CLIENT_ID = __GOOGLE_CLIENT_ID__;
 const FEEDBACK_EMAIL = 'feedback@paraglidingwind.com';   // redirecționată de Cloudflare Email Routing către autor
 const HOLFUY_MAX_KM = 5;
 const DIRS = LANG === 'en' ? ['N','NE','E','SE','S','SW','W','NW'] : ['N','NE','E','SE','S','SV','V','NV'];
-const DEFAULT_SETTINGS = {good:5, marg:7, calm:1, gust:9, spread:4, rain:0.2, from:8, to:20};
+const DEFAULT_SETTINGS = {good:5, marg:7, calm:1, gust:9, spread:4, rain:0.2, from:8, to:20, model:'best_match'};
+/* FIA-04: modelul meteo (parametrul models din Open-Meteo). Automat = best_match: Open-Meteo alege modelul potrivit locului
+   (pentru decolările din România, ICON-EU). Doar modele cu toate cele 7 zile și vântul la ~1500 m (ICON-EU singur are 5 zile,
+   ECMWF la 9 km nu are vântul la 850 hPa, deci folosim variantele de mai jos). */
+const MODELS = {
+  best_match:    {n: 'Automat', d: 'Open-Meteo alege modelul potrivit locului. Pentru decolările din România: ICON-EU.'},
+  icon_seamless: {n: 'ICON', d: 'Serviciul meteo german (DWD): în Europa ICON-EU, după 5 zile ICON global.'},
+  ecmwf_ifs025:  {n: 'ECMWF', d: 'Centrul European, modelul implicit din Windy; aici pe grila datelor publice (~25 km), deci cifrele pot diferi puțin.'},
+  gfs_seamless:  {n: 'GFS', d: 'Serviciul meteo american (NOAA).'},
+};
+const modelOf = m => MODELS[m] ? m : 'best_match';
+/* „Actualizat acum · Open-Meteo”, plus modelul dacă nu e cel automat. */
+const statusTxt = () => t('Actualizat {t} · Open-Meteo', {t: agoTxt(fc.at)}) + (modelOf(fc.model) !== 'best_match' ? ' · ' + MODELS[fc.model].n : '');
 const HOURLY = 'wind_speed_10m,wind_direction_10m,wind_gusts_10m,precipitation,cloud_cover,cape,temperature_2m,wind_speed_850hPa,wind_direction_850hPa,weather_code,cloud_cover_low,cloud_cover_mid,cloud_cover_high,is_day,lifted_index';
 const STALE_MS = 30*60*1000;
 const STATUS_TXT = {go: t('Favorabil'), maybe: t('Marginal'), no: t('Nu e de zbor'), calm: t('Calm (fără vânt)'), night: t('Noapte'), na: t('Fără date')};
@@ -656,19 +671,29 @@ function skySvg(icon){
 /* ---------- date ---------- */
 async function load(force){
   if (loading || !sites.length) { render(); return; }
-  const missing = sites.some(s => !fc || !fc.bySite[key(s)]);
+  const model = modelOf(settings.model);
+  const missing = sites.some(s => !fc || !fc.bySite[key(s)]) || modelOf(fc?.model) !== model;
   if (!force && fc && !missing && Date.now() - fc.at < STALE_MS) { render(); return; }
   loading = true; lastError = null; render();
   try{
-    const p = new URLSearchParams({
+    const common = {
       latitude: sites.map(s => s.lat).join(','),
       longitude: sites.map(s => s.lon).join(','),
       elevation: sites.map(s => s.alt ?? 'nan').join(','),
-      hourly: HOURLY, daily: 'sunrise,sunset', wind_speed_unit:'ms', timezone: TZ || 'auto', forecast_days:'7'
-    });
+      wind_speed_unit:'ms', timezone: TZ || 'auto', forecast_days:'7'
+    };
+    const p = new URLSearchParams({...common, hourly: HOURLY, daily: 'sunrise,sunset', ...(model === 'best_match' ? {} : {models: model})});
     const r = await fetchRetry('https://api.open-meteo.com/v1/forecast?' + p);
     if (!r.ok) throw new Error(r.status >= 500 ? t('Serviciul de prognoză nu răspunde momentan.') : t('Serviciul de prognoză a refuzat cererea (cod {s}).', {s: r.status}));
     let data = await r.json(); if (!Array.isArray(data)) data = [data];
+    // ICON și ECMWF nu au indicele LI, fără de care regula de supradezvoltare (CAPE + LI) nu se aplică. Îl luăm din modelul automat.
+    if (data.some(d => d.hourly.lifted_index?.every(v => v == null))){
+      try {
+        const r2 = await fetchRetry('https://api.open-meteo.com/v1/forecast?' + new URLSearchParams({...common, hourly: 'lifted_index'}));
+        let li = r2.ok ? await r2.json() : []; if (!Array.isArray(li)) li = [li];
+        data.forEach((d, i) => { const x = li[i]?.hourly; if (x && x.time.length === d.hourly.time.length && x.time[0] === d.hourly.time[0]) d.hourly.lifted_index = x.lifted_index; });
+      } catch {}
+    }
     const bySite = {};
     data.forEach((d, i) => {
       const h = d.hourly;
@@ -677,12 +702,14 @@ async function load(force){
         code:h.weather_code, lo:h.cloud_cover_low, mi:h.cloud_cover_mid, hi:h.cloud_cover_high, day:h.is_day, li:h.lifted_index,
         sr:d.daily?.sunrise, ss:d.daily?.sunset};
     });
-    fc = {at: Date.now(), bySite};
+    fc = {at: Date.now(), model, bySite};
     store.set('vld.fc3', fc);
   }catch(e){
     lastError = navigator.onLine === false ? t('Ești offline.') : e.name === 'AbortError' ? t('Serviciul de prognoză nu a răspuns la timp.')
       : e instanceof TypeError ? t('Eroare de rețea.') : (e.message || t('Eroare de rețea.'));
   }finally{ loading = false; render(); }
+  // Modelul s-a schimbat cât timp se descărca prognoza: o descărcăm încă o dată, cu modelul nou.
+  if (!lastError && fc && modelOf(fc.model) !== modelOf(settings.model)) load();
 }
 
 function hourData(site, t){
@@ -737,7 +764,7 @@ function render(){
   // status
   const st = $('#status');
   if (loading) st.textContent = t('Se descarcă prognoza…');
-  else if (fc) st.textContent = t('Actualizat {t} · Open-Meteo', {t: agoTxt(fc.at)});
+  else if (fc) st.textContent = statusTxt();
   else st.textContent = t('Fără prognoză încă');
   $('#refresh').classList.toggle('spin', loading);
   const b = $('#banner');
@@ -865,6 +892,7 @@ function openCell(si, h){
       <dt>${t('Instabilitate')}</dt><dd>${w.cape != null ? 'CAPE ' + Math.round(w.cape) + ' J/kg' : '–'}${w.li != null ? ' · LI ' + String(Math.round(w.li * 10) / 10).replace('-', '−') : ''}</dd>
       <dt>${t('Temperatură')}</dt><dd>${w.tt != null ? w.tt.toFixed(1) + ' °C' : '–'}</dd>
       ${sun ? `<dt>${t('Soare')}</dt><dd>${t('răsărit {r} · apus {s}', {r: sun.rise, s: sun.set})}</dd>` : ''}
+      <dt>${t('Model')}</dt><dd>${t(MODELS[modelOf(fc?.model)].n)}${modelOf(fc?.model) === 'best_match' ? ' (Open-Meteo)' : ''}</dd>
       <dt>${t('Decolare')}</dt><dd>${dirsTxt(s)}${s.alt ? ' · ' + s.alt + ' m' : ''}</dd>
     </dl>
     <p class="disclaimer">${t('Prognoză de model, nu o garanție. Decizia îți aparține, la decolare.')}</p>
@@ -932,8 +960,12 @@ function openEdit(){
   $('#dlgEdit').showModal();
 }
 /* UI-05: setările (limite, ore, limbă, despre) au ecranul lor, separat de lista de situri. */
+function renderModels(){
+  const cur = modelOf(settings.model);
+  $('#models').innerHTML = Object.entries(MODELS).map(([k, x]) => `<button type="button" class="prof" data-model="${k}" aria-pressed="${cur === k}"><b>${t(x.n)}</b><span>${t(x.d)}</span></button>`).join('');
+}
 function openSettings(){
-  renderProfiles(); fillSettings(); $('#sErr').hidden = true;
+  renderProfiles(); renderModels(); fillSettings(); $('#sErr').hidden = true;
   $('#dlgSettings').showModal();
 }
 function renderMyList(){
@@ -1339,6 +1371,7 @@ document.addEventListener('click', e => {
   }
   if (btn.id === 'findNear') return openOnb(1, 'near');
   if (btn.id === 'pickOpen') return openPick();
+  if (btn.dataset.model){ settings = {...settings, model: btn.dataset.model}; store.set('vld.settings', settings); renderModels(); load(true); return toast(t('Modelul meteo: {m}', {m: t(MODELS[btn.dataset.model].n)})); }
   if (btn.dataset.prof){ settings = {...settings, ...PROFILES[btn.dataset.prof]}; store.set('vld.settings', settings); fillSettings(); renderProfiles(); $('#sErr').hidden = true; render(); return toast(t('Limite: {p}', {p: t(PROF_NAME[btn.dataset.prof])})); }
   if (pickClick(btn) || onbClick(btn) || dirClick(btn)) return;
 });
@@ -1740,7 +1773,7 @@ $('#dlgEdit').addEventListener('close', () => render());
 $('#dlgSettings').addEventListener('close', () => render());
 // La revenirea în aplicație (ex. după o oră), azi tabla sare din nou la ora curentă.
 document.addEventListener('visibilitychange', () => { if (!document.hidden) load().then(() => { if (dayIdx === 0) scrollToNow(); }); });
-setInterval(() => { if (!loading && fc) $('#status').textContent = t('Actualizat {t} · Open-Meteo', {t: agoTxt(fc.at)}); }, 60000);
+setInterval(() => { if (!loading && fc) $('#status').textContent = statusTxt(); }, 60000);
 
 /* Mutarea de pe adresa veche (camarasanvlad89.github.io/vant-la-decolare): pagina de acolo trimite datele în #migrate=…
    Lista de situri se preia întocmai dacă aici nu există încă una; zilele de zbor se unesc fără dubluri. */
