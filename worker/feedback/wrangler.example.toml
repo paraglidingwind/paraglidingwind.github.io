@@ -1,0 +1,21 @@
+# Worker-ul de sugestii. Copiază fișierul în wrangler.toml (rămâne doar local, e în .gitignore)
+# și pune la TO și destination_address adresa ta verificată în Cloudflare → Email Routing → Destination addresses.
+name = "paraglidingwind-feedback"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = false
+routes = [{ pattern = "api.paraglidingwind.com", custom_domain = true }]
+
+[vars]
+FROM = "feedback@paraglidingwind.com"
+TO = "adresa-ta@example.com"
+
+[[send_email]]
+name = "MAIL"
+destination_address = "adresa-ta@example.com"
+
+# Cel mult 5 mesaje pe minut de la aceeași adresă IP.
+[[ratelimits]]
+name = "LIMIT"
+namespace_id = "1001"
+simple = { limit = 5, period = 60 }

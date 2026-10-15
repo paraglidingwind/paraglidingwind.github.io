@@ -5,3 +5,8 @@ android/build/
 android/app/build/
 android/local.properties
 *.apk
+
+# Worker-ul de sugestii: configurația reală are adresa de destinație (privată), deci rămâne doar local.
+worker/feedback/wrangler.toml
+worker/feedback/.wrangler/
+worker/feedback/node_modules/

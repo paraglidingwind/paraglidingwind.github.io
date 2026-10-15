@@ -496,18 +496,22 @@ details.hfbox .hf-in{padding:0 12px 12px}
   <header><h2>Sugestii</h2><button class="iconbtn" data-close aria-label="Închide"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
   <div class="body">
     <form id="ideaForm" novalidate>
-      <p class="hint" style="margin:0">Ai o idee sau ai găsit ceva care nu merge? Scrie aici. Mesajul pleacă din aplicația ta de email, iar autorul aplicației îl citește.</p>
+      <p class="hint" style="margin:0">Ai o idee sau ai găsit ceva care nu merge? Scrie aici; mesajul ajunge direct la autorul aplicației.</p>
       <label class="f">Despre ce e vorba</label>
       <span class="seg2" role="group" aria-label="Despre ce e vorba" id="ideaKind"><button type="button" data-kind="idee" aria-pressed="true">Idee</button><button type="button" data-kind="problema" aria-pressed="false">Problemă</button><button type="button" data-kind="altceva" aria-pressed="false">Altceva</button></span>
       <label class="f" for="ideaText">Mesajul tău</label>
       <textarea class="in" id="ideaText" rows="6" maxlength="1500" placeholder="De exemplu: aș vrea vântul și în km/h."></textarea>
+      <label class="f" for="ideaReply">Emailul tău (opțional)</label>
+      <input class="in" id="ideaReply" type="email" inputmode="email" autocomplete="email" maxlength="200" placeholder="nume@exemplu.ro">
+      <p class="hint">Doar dacă vrei un răspuns.</p>
+      <input id="ideaWebsite" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px">
       <label class="tech"><input type="checkbox" id="ideaTech" checked><span>Adaugă detalii tehnice (versiunea aplicației, limba, ecranul, browserul): ajută la găsirea problemelor.</span></label>
       <p class="err" id="ideaErr" hidden></p>
-      <div class="actions"><button class="btn primary" type="submit">Trimite pe email</button></div>
-      <div class="ideanote" id="ideaSent" hidden>
-        <p><b>Aproape gata.</b> Se deschide aplicația ta de email cu mesajul pregătit; apasă Trimite acolo.</p>
-        <p class="hint">Nu s-a deschis nimic? Copiază mesajul și trimite-l la <a id="ideaAddr"></a>.</p>
-        <div class="actions" style="margin-top:6px"><button class="btn small" type="button" id="ideaCopy">Copiază mesajul</button></div>
+      <div class="actions"><button class="btn primary" type="submit" id="ideaSend">Trimite</button></div>
+      <div class="ideanote" id="ideaOk" hidden><p><b>Mulțumim!</b> Mesajul a ajuns la autorul aplicației.</p></div>
+      <div class="ideanote" id="ideaFail" hidden>
+        <p><b>Nu am putut trimite acum.</b> Verifică internetul și încearcă din nou, sau trimite-l din aplicația ta de email.</p>
+        <div class="actions" style="margin-top:6px"><button class="btn small" type="button" id="ideaMailto">Trimite din aplicația de email</button><button class="btn small" type="button" id="ideaCopy">Copiază mesajul</button></div>
       </div>
     </form>
   </div>
@@ -1232,32 +1236,45 @@ async function signOut(){
 }
 
 /* ---------- sugestii ----------
-   Fără server: formularul pregătește un email către FEEDBACK_EMAIL și deschide aplicația de email a utilizatorului;
-   trimite el, de pe adresa lui. Nimic nu se păstrează în aplicație. */
+   Formularul trimite mesajul la Worker-ul de sugestii (worker/feedback), care îl trimite pe email autorului prin
+   Cloudflare Email Routing. Nu se păstrează nimic. Dacă nu merge (ex. fără internet): aplicația de email sau copierea. */
+const FEEDBACK_URL = location.hostname === 'localhost' ? 'http://localhost:8787/feedback' : 'https://api.paraglidingwind.com/feedback';
 const IDEA_KINDS = {idee: 'Idee', problema: 'Problemă', altceva: 'Altceva'};
 let ideaKind = 'idee';
 function openIdea(){
-  $('#ideaErr').hidden = true; $('#ideaSent').hidden = true;
-  $('#ideaAddr').textContent = FEEDBACK_EMAIL; $('#ideaAddr').href = 'mailto:' + FEEDBACK_EMAIL;
+  for (const id of ['#ideaErr', '#ideaOk', '#ideaFail']) $(id).hidden = true;
   $('#dlgIdea').showModal();
 }
+const ideaTech = () => $('#ideaTech').checked ? `${t('Versiunea {v}', {v: VERSION})} · ${LANG} · ${innerWidth}×${innerHeight}\n${navigator.userAgent}`.slice(0, 600) : '';
 function ideaMail(){
-  const tech = $('#ideaTech').checked ? `\n\n—\n${t('Versiunea {v}', {v: VERSION})} · ${LANG} · ${innerWidth}×${innerHeight}\n${navigator.userAgent}` : '';
-  return {subject: `${t('Vânt la Decolare')} · ${t(IDEA_KINDS[ideaKind])}`, body: $('#ideaText').value.trim() + tech};
+  const reply = $('#ideaReply').value.trim(), tech = ideaTech();
+  return {subject: `${t('Vânt la Decolare')} · ${t(IDEA_KINDS[ideaKind])}`,
+    body: $('#ideaText').value.trim() + (reply ? `\n\n${t('Răspuns la')}: ${reply}` : '') + (tech ? `\n\n—\n${tech}` : '')};
 }
 function copyIdea(){
   const m = ideaMail();
   navigator.clipboard.writeText(`${t('Către')}: ${FEEDBACK_EMAIL}\n${t('Subiect')}: ${m.subject}\n\n${m.body}`)
     .then(() => toast(t('Mesajul a fost copiat')), () => toast(t('Nu am putut copia. Selectează textul și copiază-l de mână.')));
 }
-$('#ideaForm').addEventListener('submit', e => {
+function mailtoIdea(){ const m = ideaMail(); location.href = `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(m.subject)}&body=${encodeURIComponent(m.body)}`; }
+$('#ideaForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const err = $('#ideaErr');
-  if ($('#ideaText').value.trim().length < 5){ err.textContent = t('Scrie câteva cuvinte despre ce ai vrea.'); err.hidden = false; return; }
-  err.hidden = true;
-  const m = ideaMail();
-  location.href = `mailto:${FEEDBACK_EMAIL}?subject=${encodeURIComponent(m.subject)}&body=${encodeURIComponent(m.body)}`;
-  $('#ideaSent').hidden = false;
+  const err = $('#ideaErr'), btn = $('#ideaSend'), message = $('#ideaText').value.trim(), reply = $('#ideaReply').value.trim();
+  const fail = msg => { err.textContent = msg; err.hidden = false; };
+  for (const id of ['#ideaErr', '#ideaOk', '#ideaFail']) $(id).hidden = true;
+  if (message.length < 5) return fail(t('Scrie câteva cuvinte despre ce ai vrea.'));
+  if (reply && !/^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(reply)) return fail(t('Adresa de email nu pare corectă. Poți s-o lași goală.'));
+  btn.disabled = true; btn.textContent = t('Se trimite…');
+  try {
+    const ac = new AbortController(), timer = setTimeout(() => ac.abort(), 15000);
+    const r = await fetch(FEEDBACK_URL, {method: 'POST', headers: {'Content-Type': 'application/json'}, signal: ac.signal,
+      body: JSON.stringify({kind: ideaKind, message, reply, tech: ideaTech(), lang: LANG, website: $('#ideaWebsite').value})});
+    clearTimeout(timer);
+    if (r.status === 429) fail(t('Ai trimis mai multe mesaje la rând. Încearcă din nou peste un minut.'));
+    else if (!r.ok) throw new Error(r.status);
+    else { $('#ideaOk').hidden = false; $('#ideaText').value = ''; toast(t('Mulțumim! Mesajul a fost trimis.')); }
+  } catch { $('#ideaFail').hidden = false; }
+  finally { btn.disabled = false; btn.textContent = t('Trimite'); }
 });
 
 /* ---------- evenimente ---------- */
@@ -1296,6 +1313,7 @@ document.addEventListener('click', e => {
   if (btn.id === 'helpTab') return $('#dlgHelp').showModal();
   if (btn.id === 'ideaTab') return openIdea();
   if (btn.id === 'ideaCopy') return copyIdea();
+  if (btn.id === 'ideaMailto') return mailtoIdea();
   if (btn.dataset.kind){ ideaKind = btn.dataset.kind; for (const b of document.querySelectorAll('#ideaKind button')) b.setAttribute('aria-pressed', String(b.dataset.kind === ideaKind)); return; }
   if (btn.dataset.mv != null){ const i = +btn.dataset.mv, j = i + +btn.dataset.d; [sites[i], sites[j]] = [sites[j], sites[i]]; saveSites(); renderMyList(); render(); return; }
   if (btn.dataset.del != null){
