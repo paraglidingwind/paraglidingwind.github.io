@@ -178,7 +178,7 @@ const SHOTS = {
   // Tabla, azi, pe ore.
   tabla: {state: BOARD, run: `${board}
     scrollToNow(); await __sleep(100);
-    __mark([['.day', 'tr', {dx: -6, dy: 4}], ['.viewbar .seg2', 'r', {dx: 6}], ['.grid tbody th .site', 'br', {i: 1, dx: -12, dy: -10}],
+    __mark([['.day', 'tr', {dx: -6, dy: 4}], ['.viewbar .seg2', 'tr', {dx: -4, dy: 2}], ['.grid tbody th .site', 'br', {i: 1, dx: -12, dy: -10}],
       ['#nowcol', 't', {dy: -8}], ['.cell[data-site="1"][data-h="13"]', 'br', {ring: true, radius: 4, dx: -4, dy: -4}],
       ['#refresh', 'b', {dy: 2}], ['#topLang', 'b', {dy: 2}], ['.tabbar', 't', {dy: 2}]]);`},
   // O celulă mărită, cu părțile ei.
