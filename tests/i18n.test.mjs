@@ -19,7 +19,7 @@ test('etichetele de cer și notele despre nori au traducere', () => {
 
 test('textele fixe din pagină (HTML) au traducere în engleză', () => {
   const html = read('src/index.html'), body = html.slice(html.indexOf('<body>'), html.indexOf('<script>'));
-  const keep = new Set(['Română', 'English', 'RO', 'EN', 'Windy', 'Meteoblue', 'Export Excel', 'Import Excel']);
+  const keep = new Set(['Română', 'English', 'RO', 'EN', 'Windy', 'Meteoblue', 'Export Excel', 'Import Excel', 'km/h', 'kt', 'mph']);
   const keys = new Set();
   for (const m of body.matchAll(/>([^<>]+)</g)){ const k = m[1].trim(); if (k && /\p{L}{2}/u.test(k)) keys.add(k); }
   for (const m of body.matchAll(/(?:aria-label|placeholder|title)="([^"]+)"/g)) if (/\p{L}{2}/u.test(m[1])) keys.add(m[1]);

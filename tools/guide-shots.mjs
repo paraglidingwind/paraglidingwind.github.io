@@ -219,10 +219,10 @@ const SHOTS = {
     __mark([['#myList .row .acts', 'l', {i: 1, dx: -6}], ['#pickOpen', 'tr', {dx: -4, dy: 4}], ['#resetSites', 'tr', {dx: -4, dy: 4}], ['#manualBox summary', 'r', {dx: -10}]]);`,
     clip: `return __sheet()`},
   // Setări.
-  setari: {state: BOARD, h: 1400, run: `${board}
+  setari: {state: BOARD, h: 1500, run: `${board}
     __el('#settingsOpen').click(); await __until(() => document.querySelector('#dlgSettings[open] .prof'));
     __mark([['#profiles', 'tr', {dx: -8, dy: 6}], ['#customBox summary', 'r', {dx: -10}], ['#dlgSettings .two', 'tr', {dx: -8, dy: 6}],
-      ['#models', 'tr', {dx: -8, dy: 6}], ['#langSeg', 'tr', {dx: -4, dy: 4}]]);`,
+      ['#unitSeg', 'tr', {dx: -4, dy: 4}], ['#models', 'tr', {dx: -8, dy: 6}], ['#langSeg', 'tr', {dx: -4, dy: 4}]]);`,
     clip: `return __sheet()`},
   // Jurnalul, pe zile.
   jurnal: {state: BOARD, h: 900, run: `${board}

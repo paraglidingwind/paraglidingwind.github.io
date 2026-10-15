@@ -302,6 +302,7 @@ details.custom summary{min-height:44px;display:flex;align-items:center;font-weig
 /* Doar tabla se micșorează când ecranul e scund; restul își păstrează înălțimea (altfel banda de zile se taie). */
 .top,.banner,.days,.viewbar,.legend{flex:0 0 auto}
 .seg2.lang{display:inline-flex}
+.seg2.units button{flex:1 1 0;min-width:0}
 .viewbar .chipb{min-height:44px}
 .board.summary{margin:0 16px;border:1px solid var(--line);border-radius:12px;padding:4px 0}
 .sumhead,.sumrow{display:grid;grid-template-columns:118px 1fr;gap:10px;align-items:center;padding:8px 12px}
@@ -446,9 +447,9 @@ details.hfbox .hf-in{padding:0 12px 12px}
   <div class="body">
     <h3>Limitele tale</h3>
     <div class="profiles" id="profiles"></div>
-    <details class="custom" id="customBox"><summary>Personalizat (pragurile în m/s)</summary>
+    <details class="custom" id="customBox"><summary id="customSum">Personalizat (pragurile de vânt în m/s)</summary>
       <div class="three">
-        <div><label class="f" for="sGood">Bun până la (m/s)</label><input class="in" id="sGood" type="number" step="0.5" inputmode="decimal"></div>
+        <div><label class="f" for="sGood">Bun până la</label><input class="in" id="sGood" type="number" step="0.5" inputmode="decimal"></div>
         <div><label class="f" for="sMarg">Marginal până la</label><input class="in" id="sMarg" type="number" step="0.5" inputmode="decimal"></div>
         <div><label class="f" for="sCalm">Calm sub</label><input class="in" id="sCalm" type="number" step="0.5" inputmode="decimal"></div>
         <div><label class="f" for="sGust">Rafale maxime</label><input class="in" id="sGust" type="number" step="0.5" inputmode="decimal"></div>
@@ -462,6 +463,9 @@ details.hfbox .hf-in{padding:0 12px 12px}
       <div><label class="f" for="sFrom">De la ora</label><input class="in" id="sFrom" type="number" min="0" max="23" inputmode="numeric"></div>
       <div><label class="f" for="sTo">Până la ora</label><input class="in" id="sTo" type="number" min="0" max="23" inputmode="numeric"></div>
     </div>
+    <h3>Unitatea vântului</h3>
+    <span class="seg2 units" role="group" aria-label="Unitatea vântului" id="unitSeg"><button type="button" data-unit="ms" aria-pressed="true">m/s</button><button type="button" data-unit="kmh" aria-pressed="false">km/h</button><button type="button" data-unit="kt" aria-pressed="false" aria-label="Noduri">kt</button><button type="button" data-unit="mph" aria-pressed="false">mph</button></span>
+    <p class="hint">Doar afișarea se schimbă: limitele rămân aceleași.</p>
     <h3>Modelul meteo</h3>
     <div class="profiles" id="models"></div>
     <p class="hint">Modelele dau cifre puțin diferite. Când diferă mult între ele, prognoza e nesigură.</p>
@@ -484,7 +488,7 @@ details.hfbox .hf-in{padding:0 12px 12px}
     <ul class="helplist">
       <li>Pictograma de sus: cerul și tipul de nori.</li>
       <li>Săgeata: încotro bate vântul.</li>
-      <li>Cifra mare: vântul la 10 m (m/s). Cifra mică: rafalele.</li>
+      <li>Cifra mare: vântul la 10 m, în unitatea aleasă în Setări (implicit m/s). Cifra mică: rafalele.</li>
       <li>Culoarea: verdictul, după direcțiile decolării și limitele tale.</li>
       <li>Colțul marcat: o avertizare (vânt tare la altitudine, furtună, decolare fără direcții). Atinge celula ca să vezi motivul.</li>
       <li>Orele estompate: noapte, sau ore deja trecute azi.</li>
@@ -503,7 +507,7 @@ details.hfbox .hf-in{padding:0 12px 12px}
       <label class="f">Despre ce e vorba</label>
       <span class="seg2" role="group" aria-label="Despre ce e vorba" id="ideaKind"><button type="button" data-kind="idee" aria-pressed="true">Idee</button><button type="button" data-kind="problema" aria-pressed="false">Problemă</button><button type="button" data-kind="altceva" aria-pressed="false">Altceva</button></span>
       <label class="f" for="ideaText">Mesajul tău</label>
-      <textarea class="in" id="ideaText" rows="6" maxlength="1500" placeholder="De exemplu: aș vrea vântul și în km/h."></textarea>
+      <textarea class="in" id="ideaText" rows="6" maxlength="1500" placeholder="De exemplu: lipsește o decolare din zona mea."></textarea>
       <label class="f" for="ideaReply">Emailul tău (opțional)</label>
       <input class="in" id="ideaReply" type="email" inputmode="email" autocomplete="email" maxlength="200" placeholder="nume@exemplu.ro">
       <p class="hint">Doar dacă vrei un răspuns.</p>
@@ -575,7 +579,10 @@ const GOOGLE_CLIENT_ID = __GOOGLE_CLIENT_ID__;
 const FEEDBACK_EMAIL = 'feedback@paraglidingwind.com';   // redirecționată de Cloudflare Email Routing către autor
 const HOLFUY_MAX_KM = 5;
 const DIRS = LANG === 'en' ? ['N','NE','E','SE','S','SW','W','NW'] : ['N','NE','E','SE','S','SV','V','NV'];
-const DEFAULT_SETTINGS = {good:5, marg:7, calm:1, gust:9, spread:4, rain:0.2, from:8, to:20, model:'best_match'};
+const DEFAULT_SETTINGS = {good:5, marg:7, calm:1, gust:9, spread:4, rain:0.2, from:8, to:20, model:'best_match', unit:'ms'};
+/* UI-13: unitatea vântului (UNITS e în core.js). say = cum o citește cititorul de ecran; hf = numele ei pentru widgetul Holfuy. */
+const UNIT_INFO = {ms: {say: 'metri pe secundă', hf: 'm/s'}, kmh: {say: 'kilometri pe oră', hf: 'km/h'}, kt: {say: 'noduri', hf: 'knots'}, mph: {say: 'mile pe oră', hf: 'mph'}};
+const unitName = () => UNITS[unitOf(settings)].n;
 /* FIA-04: modelul meteo (parametrul models din Open-Meteo). Automat = best_match: Open-Meteo alege modelul potrivit locului
    (pentru decolările din România, ICON-EU). Doar modele cu toate cele 7 zile și vântul la ~1500 m (ICON-EU singur are 5 zile,
    ECMWF la 9 km nu are vântul la 850 hPa, deci folosim variantele de mai jos). */
@@ -803,9 +810,9 @@ function render(){
     for (const h of hs){
       const {w, r} = rateAt(s, d, h);
       if (r.st === 'na'){ html += `<td class="${past(h)}"><div class="cell na">–</div></td>`; continue; }
-      const rain = w.pr > settings.rain ? `<span class="rain">${w.pr.toFixed(1)}mm</span>` : `<small>${Math.round(w.wg)}</small>`;
-      html += `<td class="${past(h)}"><button class="cell ${r.st}" data-site="${si}" data-h="${h}" aria-label="${t('{n} ora {h}: {st}, {d} {v} metri pe secundă, {sky}', {n: esc(s.n), h, st: STATUS_TXT[r.st], d: DIRS[sectorOf(w.wd)], v: w.ws.toFixed(1), sky: sky(w).label})}${r.warn.length ? ', ' + t('cu avertizare') : ''}">`
-        + (r.warn.length ? '<span class="flag" aria-hidden="true"></span>' : '') + `<span class="ic">${skySvg(sky(w).icon)}<svg class="arr" viewBox="0 0 24 24" style="transform:rotate(${(w.wd+180)%360}deg)">${ARROW}</svg></span><b>${Math.round(w.ws)}</b>${rain}</button></td>`;
+      const rain = w.pr > settings.rain ? `<span class="rain">${w.pr.toFixed(1)}mm</span>` : `<small>${spd(w.wg, settings, 0)}</small>`;
+      html += `<td class="${past(h)}"><button class="cell ${r.st}" data-site="${si}" data-h="${h}" aria-label="${t('{n} ora {h}: {st}, {d} {v} {u}, {sky}', {n: esc(s.n), h, st: STATUS_TXT[r.st], d: DIRS[sectorOf(w.wd)], v: spd(w.ws, settings), u: t(UNIT_INFO[unitOf(settings)].say), sky: sky(w).label})}${r.warn.length ? ', ' + t('cu avertizare') : ''}">`
+        + (r.warn.length ? '<span class="flag" aria-hidden="true"></span>' : '') + `<span class="ic">${skySvg(sky(w).icon)}<svg class="arr" viewBox="0 0 24 24" style="transform:rotate(${(w.wd+180)%360}deg)">${ARROW}</svg></span><b>${spd(w.ws, settings, 0)}</b>${rain}</button></td>`;
     }
     html += '</tr>';
   }
@@ -884,9 +891,9 @@ function openCell(si, h){
     <div class="skyrow">${skySvg(k.icon)}<div><b>${esc(k.label)}</b>${k.type ? `<br><span style="color:var(--muted)">${esc(k.type)}</span>` : ''}</div></div>
     ${k.type && CLOUD_NOTES[k.type] ? `<p class="note">${t(CLOUD_NOTES[k.type])}</p>` : ''}
     <dl class="facts">
-      <dt>${t('Vânt la 10 m')}</dt><dd>${t('{v} m/s din {d}', {v: w.ws.toFixed(1), d: dir(w.wd)})}</dd>
-      <dt>${t('Rafale')}</dt><dd>${w.wg != null ? w.wg.toFixed(1) + ' m/s' : '–'}</dd>
-      <dt>${t('Vânt la ~1500 m')}</dt><dd>${w.w8 != null ? t('{v} m/s din {d}', {v: w.w8.toFixed(1), d: dir(w.d8)}) : '–'}</dd>
+      <dt>${t('Vânt la 10 m')}</dt><dd>${t('{v} {u} din {d}', {v: spd(w.ws, settings), u: unitName(), d: dir(w.wd)})}</dd>
+      <dt>${t('Rafale')}</dt><dd>${w.wg != null ? spd(w.wg, settings) + ' ' + unitName() : '–'}</dd>
+      <dt>${t('Vânt la ~1500 m')}</dt><dd>${w.w8 != null ? t('{v} {u} din {d}', {v: spd(w.w8, settings), u: unitName(), d: dir(w.d8)}) : '–'}</dd>
       <dt>${t('Nori')}</dt><dd>${w.cc != null ? w.cc + ' %' : '–'}${w.lo != null ? ` <span style="color:var(--muted);font-weight:500">${t('(jos {lo} · mediu {mi} · sus {hi})', {lo: w.lo, mi: w.mi, hi: w.hi})}</span>` : ''}</dd>
       <dt>${t('Ploaie')}</dt><dd>${w.pr != null ? w.pr.toFixed(1) + ' mm/h' : '–'}</dd>
       <dt>${t('Instabilitate')}</dt><dd>${w.cape != null ? 'CAPE ' + Math.round(w.cape) + ' J/kg' : '–'}${w.li != null ? ' · LI ' + String(Math.round(w.li * 10) / 10).replace('-', '−') : ''}</dd>
@@ -944,7 +951,7 @@ function holfuyBlock(s){
 document.addEventListener('toggle', e => {
   const d = e.target; if (!d.matches?.('details.hfbox') || !d.open) return;
   const box = d.querySelector('.holfuy');
-  if (!box.firstChild) box.innerHTML = `<iframe title="${t('Vântul acum la {n}', {n: d.dataset.hfn})}" src="https://widget.holfuy.com/?station=${d.dataset.hf}&su=m/s&t=C&lang=en&mode=detailed"></iframe>`;
+  if (!box.firstChild) box.innerHTML = `<iframe title="${t('Vântul acum la {n}', {n: d.dataset.hfn})}" src="https://widget.holfuy.com/?station=${d.dataset.hf}&su=${UNIT_INFO[unitOf(settings)].hf}&t=C&lang=en&mode=detailed"></iframe>`;
 }, true);
 function siteLinks(s){
   return `<div class="links">
@@ -980,13 +987,22 @@ function renderManualRose(){
     : `<button type="button" data-rose="${i}" data-v="${manualRose[i]}" aria-label="${DIRS[i]}: ${t(['nu','marginal','bun'][manualRose[i]])}">${DIRS[i]}</button>`).join('');
 }
 const SETTING_IDS = {good:'sGood', marg:'sMarg', calm:'sCalm', gust:'sGust', spread:'sSpread', rain:'sRain', from:'sFrom', to:'sTo'};
-function fillSettings(){ for (const [k, id] of Object.entries(SETTING_IDS)) $('#'+id).value = settings[k]; }
+const WIND_KEYS = ['good', 'marg', 'calm', 'gust', 'spread'];   // pragurile de vânt: afișate în unitatea aleasă, salvate în m/s
+function fillSettings(){
+  for (const [k, id] of Object.entries(SETTING_IDS)){
+    const wind = WIND_KEYS.includes(k);
+    $('#'+id).value = wind ? lim(settings[k], settings) : settings[k];
+    if (wind) $('#'+id).step = unitOf(settings) === 'ms' ? '0.5' : '1';
+  }
+  $('#customSum').textContent = t('Personalizat (pragurile de vânt în {u})', {u: unitName()});
+  for (const b of document.querySelectorAll('#unitSeg button')) b.setAttribute('aria-pressed', String(b.dataset.unit === unitOf(settings)));
+}
 /* ONB-02: profilurile de limite (PROFILES e în core.js). „Personalizat” = valori care nu se potrivesc cu niciun profil. */
 const PROF_NAME = {elev: 'Elev / începător', pilot: 'Pilot', avansat: 'Avansat'};
 const profOf = st => Object.keys(PROFILES).find(k => Object.entries(PROFILES[k]).every(([f, v]) => st[f] === v)) || 'custom';
 function profButtons(cur, attr){
   return Object.keys(PROFILES).map(k => { const x = PROFILES[k];
-    return `<button type="button" class="prof" ${attr}="${k}" aria-pressed="${cur === k}"><b>${t(PROF_NAME[k])}</b><span>${t('Vânt bun până la {g} m/s, marginal până la {m}, rafale până la {r}', {g: x.good, m: x.marg, r: x.gust})}</span></button>`; }).join('');
+    return `<button type="button" class="prof" ${attr}="${k}" aria-pressed="${cur === k}"><b>${t(PROF_NAME[k])}</b><span>${t('Vânt bun până la {g} {u}, marginal până la {m}, rafale până la {r}', {g: lim(x.good, settings), u: unitName(), m: lim(x.marg, settings), r: lim(x.gust, settings)})}</span></button>`; }).join('');
 }
 function renderProfiles(){
   const cur = profOf(settings);
@@ -1371,6 +1387,7 @@ document.addEventListener('click', e => {
   }
   if (btn.id === 'findNear') return openOnb(1, 'near');
   if (btn.id === 'pickOpen') return openPick();
+  if (btn.dataset.unit){ settings = {...settings, unit: btn.dataset.unit}; store.set('vld.settings', settings); fillSettings(); renderProfiles(); render(); return toast(t('Vântul în {u}', {u: unitName()})); }
   if (btn.dataset.model){ settings = {...settings, model: btn.dataset.model}; store.set('vld.settings', settings); renderModels(); load(true); return toast(t('Modelul meteo: {m}', {m: t(MODELS[btn.dataset.model].n)})); }
   if (btn.dataset.prof){ settings = {...settings, ...PROFILES[btn.dataset.prof]}; store.set('vld.settings', settings); fillSettings(); renderProfiles(); $('#sErr').hidden = true; render(); return toast(t('Limite: {p}', {p: t(PROF_NAME[btn.dataset.prof])})); }
   if (pickClick(btn) || onbClick(btn) || dirClick(btn)) return;
@@ -1758,7 +1775,7 @@ for (const [k, id] of Object.entries(SETTING_IDS)){
   $('#'+id).addEventListener('change', e => {
     const v = parseFloat(e.target.value);
     if (!isFinite(v)) return fillSettings();
-    const next = {...settings, [k]: (k === 'from' || k === 'to') ? Math.min(23, Math.max(0, Math.round(v))) : v};
+    const next = {...settings, [k]: (k === 'from' || k === 'to') ? Math.min(23, Math.max(0, Math.round(v))) : WIND_KEYS.includes(k) ? v / UNITS[unitOf(settings)].f : v};
     if (next.from > next.to) [next.from, next.to] = [next.to, next.from];
     const msg = validateSettings(next), err = $('#sErr');
     err.hidden = !msg; err.textContent = msg || '';
