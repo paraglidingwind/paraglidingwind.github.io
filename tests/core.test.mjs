@@ -37,6 +37,26 @@ test('parseCoords(): cazurile comune', () => {
   }
 });
 
+test('unitatea vântului (UI-13): aceleași verdicte, textele în unitatea aleasă', () => {
+  const site = {o: [0, 1, 2, 2, 1, 0, 0, 0]}, s = {good: 5, marg: 7, calm: 1, gust: 9, spread: 4, rain: 0.2};
+  const w = {ws: 7.5, wd: 90, wg: 12, pr: 0, w8: 9, d8: 90};
+  const msg = u => core.rate(site, w, {...s, unit: u}).why.map(([, m]) => m);
+  for (const u of ['kmh', 'kt', 'mph', 'toString', undefined]){
+    const r = core.rate(site, w, {...s, unit: u});
+    assert.equal(r.st, 'no', u); assert.deepEqual(r.warn, ['alt'], u);
+  }
+  assert.deepEqual(msg('ms'), ['Direcție bună (E)', 'Vânt prea tare: 7.5 m/s (peste 7)', 'Rafale 12.0 m/s (peste 9)', 'Vânt tare la ~1500 m: 9.0 m/s (peste 8)']);
+  assert.deepEqual(msg('kmh'), ['Direcție bună (E)', 'Vânt prea tare: 27.0 km/h (peste 25.2)', 'Rafale 43.2 km/h (peste 32.4)', 'Vânt tare la ~1500 m: 32.4 km/h (peste 28.8)']);
+  assert.deepEqual(msg('toString'), msg('ms'));   // unitate necunoscută = m/s
+  assert.equal(core.rate(site, {ws: 0.5, wd: 90, wg: 1, pr: 0}, {...s, unit: 'kt'}).why[0][1], 'Vânt slab (1.0 kt), direcția nu contează');
+  const sum = u => core.summarize(site, ['10', '11'], [{ws: 2, wd: 90, wg: 3, pr: 0}, {ws: 3, wd: 90, wg: 4, pr: 0}], {...s, unit: u}).text;
+  assert.equal(sum('ms'), 'Favorabil 10–11 (2 ore) · vânt din E 2–3 m/s');
+  assert.equal(sum('kt'), 'Favorabil 10–11 (2 ore) · vânt din E 4–6 kt');
+  assert.equal(sum('mph'), 'Favorabil 10–11 (2 ore) · vânt din E 4–7 mph');
+  assert.equal(core.summarize(site, ['10'], [{ws: 0.4, wd: 90, wg: 1, pr: 0}], {...s, unit: 'kmh'}).text, 'Nicio fereastră bună · calm (sub 3.6 km/h) ora 10');
+  assert.deepEqual(['ms', 'kmh', 'kt', 'mph'].map(u => core.lim(5, {unit: u})), ['5', '18', '9.7', '11.2']);
+});
+
 test('sectorOf(): granițele sectoarelor', () => {
   assert.deepEqual([0, 350, 100, 315, 337.6, -45, 720].map(core.sectorOf), [0, 0, 2, 7, 0, 7, 0]);
 });

@@ -10,6 +10,12 @@ const CAPE_RISK = 800, LI_RISK = -2;                  // supradezvoltare
 const STORM_AHEAD = 2;                                // ore înainte de o furtună prognozată
 const MIN_WINDOW = 2;                                 // ore favorabile la rând ca ziua să fie „Favorabil”
 
+/* UI-13: unitatea vântului. Prognoza și pragurile rămân în m/s; doar textele se convertesc, după s.unit din setări. */
+const UNITS = {ms: {n: 'm/s', f: 1}, kmh: {n: 'km/h', f: 3.6}, kt: {n: 'kt', f: 1.943844}, mph: {n: 'mph', f: 2.236936}};
+const unitOf = s => s && Object.hasOwn(UNITS, s.unit) ? s.unit : 'ms';
+const spd = (v, s, dec = 1) => (v * UNITS[unitOf(s)].f).toFixed(dec);   // o viteză, fără unitate
+const lim = (v, s) => String(Math.round(v * UNITS[unitOf(s)].f * 10) / 10);   // un prag: cel mult o zecimală
+
 function sectorOf(deg){ return Math.round(((deg % 360) + 360) % 360 / 45) % 8; }
 const knownDirs = site => site.o.some(v => v > 0);
 
@@ -18,32 +24,32 @@ const knownDirs = site => site.o.some(v => v > 0);
 function rate(site, w, s, ctx = {}){
   if (!w || w.ws == null || w.wd == null) return {st:'na', why:[], warn:[]};
   if (w.day === 0) return {st:'night', why:[['night', t('Noapte: fără lumină de zbor')]], warn:[]};
-  const why = [], warn = []; let st = 'go';
+  const why = [], warn = [], u = UNITS[unitOf(s)].n; let st = 'go';
   const bump = (to, msg, kind) => { why.push([to, msg, kind]); if (kind && !warn.includes(kind)) warn.push(kind); if (RANK[to] > RANK[st]) st = to; };
   const known = knownDirs(site);
   if (w.ws < s.calm){
-    st = 'calm'; why.push(['calm', t('Vânt slab ({v} m/s), direcția nu contează', {v: w.ws.toFixed(1)})]);
+    st = 'calm'; why.push(['calm', t('Vânt slab ({v} {u}), direcția nu contează', {v: spd(w.ws, s), u})]);
   } else {
     const sec = sectorOf(w.wd), sc = site.o[sec];
     if (!known) bump('maybe', t('Decolarea nu are direcții setate: verifică dacă vântul din {d} e bun aici', {d: DIRS[sec]}), 'nodir');
     else if (sc === 2) why.push(['go', t('Direcție bună ({d})', {d: DIRS[sec]})]);
     else if (sc === 1) bump('maybe', t('Direcție marginală ({d})', {d: DIRS[sec]}));
     else bump('no', t('Direcție nepotrivită ({d}) pentru decolare', {d: DIRS[sec]}));
-    if (w.ws > s.marg) bump('no', t('Vânt prea tare: {v} m/s (peste {lim})', {v: w.ws.toFixed(1), lim: s.marg}));
-    else if (w.ws > s.good) bump('maybe', t('Vânt tare: {v} m/s (peste {lim})', {v: w.ws.toFixed(1), lim: s.good}));
+    if (w.ws > s.marg) bump('no', t('Vânt prea tare: {v} {u} (peste {lim})', {v: spd(w.ws, s), u, lim: lim(s.marg, s)}));
+    else if (w.ws > s.good) bump('maybe', t('Vânt tare: {v} {u} (peste {lim})', {v: spd(w.ws, s), u, lim: lim(s.good, s)}));
   }
   if (w.wg != null){
-    if (w.wg > s.gust) bump('no', t('Rafale {v} m/s (peste {lim})', {v: w.wg.toFixed(1), lim: s.gust}));
-    else if (w.wg - w.ws > s.spread) bump('maybe', t('Turbulent: rafalele depășesc vântul cu {v} m/s', {v: (w.wg-w.ws).toFixed(1)}));
+    if (w.wg > s.gust) bump('no', t('Rafale {v} {u} (peste {lim})', {v: spd(w.wg, s), u, lim: lim(s.gust, s)}));
+    else if (w.wg - w.ws > s.spread) bump('maybe', t('Turbulent: rafalele depășesc vântul cu {v} {u}', {v: spd(w.wg-w.ws, s), u}));
   }
   if (w.pr != null && w.pr > s.rain) bump('no', t('Ploaie {v} mm/h', {v: w.pr.toFixed(1)}));
   // SIG-01: vântul de la ~1500 m. Tare, sau din spatele decolării (zonă de sub vânt, rotori).
   if (w.w8 != null && w.d8 != null){
     const s8 = sectorOf(w.d8);
-    if (w.w8 > ALT_NO) bump('no', t('Vânt foarte tare la ~1500 m: {v} m/s (peste {lim})', {v: w.w8.toFixed(1), lim: ALT_NO}), 'alt');
-    else if (w.w8 > ALT_MARG) bump('maybe', t('Vânt tare la ~1500 m: {v} m/s (peste {lim})', {v: w.w8.toFixed(1), lim: ALT_MARG}), 'alt');
+    if (w.w8 > ALT_NO) bump('no', t('Vânt foarte tare la ~1500 m: {v} {u} (peste {lim})', {v: spd(w.w8, s), u, lim: lim(ALT_NO, s)}), 'alt');
+    else if (w.w8 > ALT_MARG) bump('maybe', t('Vânt tare la ~1500 m: {v} {u} (peste {lim})', {v: spd(w.w8, s), u, lim: lim(ALT_MARG, s)}), 'alt');
     if (known && site.o[s8] === 0 && w.w8 > ALT_BEHIND)
-      bump('maybe', t('Vânt la ~1500 m din spatele decolării ({d}, {v} m/s): risc de rotori', {d: DIRS[s8], v: w.w8.toFixed(1)}), 'alt');
+      bump('maybe', t('Vânt la ~1500 m din spatele decolării ({d}, {v} {u}): risc de rotori', {d: DIRS[s8], v: spd(w.w8, s), u}), 'alt');
   }
   // SIG-02: furtună acum sau în următoarele ore; altfel instabilitate mare (supradezvoltare).
   const storm = [w, ...(ctx.next || [])].slice(0, STORM_AHEAD + 1).findIndex(x => x && x.code >= 95);
@@ -71,8 +77,8 @@ function summarize(site, hs, ws, s, extra = []){
     const part = ws.slice(a, b + 1).filter(w => w && w.ws != null && w.wd != null), cnt = new Map();
     part.forEach(w => { const k = DIRS[sectorOf(w.wd)]; cnt.set(k, (cnt.get(k) || 0) + 1); });
     let dir = '–', mx = 0; for (const [k, v] of cnt) if (v > mx){ dir = k; mx = v; }
-    const lo = Math.round(Math.min(...part.map(w => w.ws))), hi = Math.round(Math.max(...part.map(w => w.ws)));
-    return t('vânt din {d} {r} m/s', {d: dir, r: lo === hi ? lo : lo + '–' + hi});
+    const lo = spd(Math.min(...part.map(w => w.ws)), s, 0), hi = spd(Math.max(...part.map(w => w.ws)), s, 0);
+    return t('vânt din {d} {r} {u}', {d: dir, r: lo === hi ? lo : lo + '–' + hi, u: UNITS[unitOf(s)].n});
   };
   const goRuns = runs('go'), g = longest(goRuns.filter(r => n(r) >= MIN_WINDOW)), m = longest(runs('maybe')), c = longest(runs('calm'));
   const si = rs.findIndex(r => r.warn.includes('storm'));
@@ -82,7 +88,7 @@ function summarize(site, hs, ws, s, extra = []){
     + (m ? t(' · marginal {s}', {s: span(m)}) : '') + tail};
   if (m) return {sts, st:'maybe', text: t('Cel mult marginal: {s} · {w}', {s: span(m), w: wind(m)}) + tail};
   if (sts.every(x => x === 'na' || x === 'night')) return {sts, st:'na', text: t('Fără date')};
-  if (c) return {sts, st:'calm', text: t('Nicio fereastră bună · calm (sub {c} m/s) {s}', {c: s.calm, s: span(c)}) + tail};
+  if (c) return {sts, st:'calm', text: t('Nicio fereastră bună · calm (sub {c} {u}) {s}', {c: lim(s.calm, s), u: UNITS[unitOf(s)].n, s: span(c)}) + tail};
   return {sts, st:'no', text: t('Nicio fereastră bună') + tail};
 }
 
