@@ -779,7 +779,8 @@ function agoTxt(at){
 /* Azi, tabla începe cu ora curentă (prima coloană de lângă nume); orele trecute rămân la stânga, estompate. */
 function scrollToNow(){
   const c = document.getElementById('nowcol'), board = $('#board'), corner = board.querySelector('.corner');
-  if (c && corner) board.scrollLeft = Math.max(0, c.offsetLeft - corner.offsetWidth);
+  // Din pozițiile pe ecran: offsetLeft se măsoară față de pagină (tabla nu e poziționată) și ar lăsa ora sub coloana cu nume.
+  if (c && corner) board.scrollLeft += c.getBoundingClientRect().left - corner.getBoundingClientRect().right;
 }
 
 /* ---------- detalii ---------- */
