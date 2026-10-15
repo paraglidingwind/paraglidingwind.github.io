@@ -333,7 +333,6 @@ details.hfbox .hf-in{padding:0 12px 12px}
     <span class="k"><b class="lg calm"></b>Calm</span>
     <span class="k"><b class="lg warn"></b>Avertizare</span>
     <span class="k"><b class="lg night"></b>Noapte</span>
-    <button type="button" class="linkbtn" id="helpOpen">Ce înseamnă?</button>
     <span class="disclaimer">Prognoză de model, nu o garanție. Decizia îți aparține, la decolare.</span>
   </div>
 </div>
@@ -1211,7 +1210,7 @@ document.addEventListener('click', e => {
   if (btn.dataset.sumsite != null) return showSiteHours(+btn.dataset.sumsite);
   if (btn.id === 'navBoard'){ for (const dl of document.querySelectorAll('dialog[open]')) dl.close(); scrollTo(0, 0); return; }
   if (btn.id === 'settingsOpen') return openSettings();
-  if (btn.id === 'helpOpen' || btn.id === 'helpTab') return $('#dlgHelp').showModal();
+  if (btn.id === 'helpTab') return $('#dlgHelp').showModal();
   if (btn.dataset.mv != null){ const i = +btn.dataset.mv, j = i + +btn.dataset.d; [sites[i], sites[j]] = [sites[j], sites[i]]; saveSites(); renderMyList(); render(); return; }
   if (btn.dataset.del != null){
     const i = +btn.dataset.del, [s] = sites.splice(i, 1); saveSites(); renderMyList(); render();
