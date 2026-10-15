@@ -53,6 +53,7 @@ button{cursor:pointer}
 /* Bara de sus */
 .top{display:flex;align-items:center;gap:10px;padding:10px 16px 6px}
 .brand{flex:1;min-width:0}
+.toplang a{padding:0 11px;font-size:14px}
 .brand h1{margin:0;font:700 22px/1 var(--f-display);letter-spacing:.02em;text-transform:uppercase}
 .brand p{margin:3px 0 0;color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .iconbtn{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface)}
@@ -323,6 +324,7 @@ details.hfbox .hf-in{padding:0 12px 12px}
       <h1>Vânt la Decolare</h1>
       <p id="status">Se încarcă prognoza…</p>
     </div>
+    <div class="seg2 lang toplang" id="topLang" role="group" aria-label="Limba"><a href="?lang=ro" data-lang="ro" lang="ro" aria-label="Română">RO</a><a href="?lang=en" data-lang="en" lang="en" aria-label="English">EN</a></div>
     <button class="iconbtn" id="refresh" aria-label="Reîmprospătează prognoza"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
   </div>
   <div class="banner" id="banner" hidden></div>
@@ -527,7 +529,7 @@ function translateStatic(){
     for (const a of document.querySelectorAll('a[href^="ghid.html"]')) a.href = a.getAttribute('href').replace('ghid.html', GUIDE);
   }
   $('#ver').textContent = t('Versiunea {v}', {v: VERSION});
-  for (const a of document.querySelectorAll('#langSeg a')) a.setAttribute('aria-current', String(a.dataset.lang === LANG));
+  for (const a of document.querySelectorAll('#langSeg a, #topLang a')) a.setAttribute('aria-current', String(a.dataset.lang === LANG));
 }
 const VERSION = '__VERSION__';
 const SKY_ICONS = __SKY_ICONS__;
