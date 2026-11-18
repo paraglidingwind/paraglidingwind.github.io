@@ -248,7 +248,7 @@ function guessCountry(index, lang, point){
    Aceeași structură ca Xlsx.kt din aplicația Android. */
 const xmlEsc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const excelDate = d => { const [y, m, dd] = d.split('-').map(Number); return (Date.UTC(y, m - 1, dd) - Date.UTC(1899, 11, 30)) / 864e5; };
-const col = i => 'ABCDEFGHIJ'[i];
+const col = i => 'ABCDEFGHIJK'[i];
 function xlRow(r, cells){
   return `<row r="${r}">` + cells.map((c, i) => {
     const ref = col(i) + r;
@@ -273,8 +273,8 @@ function xlsxParts(list, siteList, sync){
   const days = [...list].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
   const n = days.length;
   // JUR-02: decolări (lipsă = 1), altitudinea decolării, condițiile, numărul zborului VFR.
-  const s1 = [[H(t('Data')), H(t('Locație')), H(t('Timp în aer')), H(t('Minute')), H(t('Decolări')), H(t('Altitudine decolare')), H(t('Condiții')), H(t('Nr. zbor VFR'))],
-    ...days.map(f => [{v: excelDate(f.date), s: 2}, {v: f.site}, {v: f.minutes / 1440, s: 3}, {v: f.minutes}, {v: f.launches || 1}, f.alt != null ? {v: f.alt} : {v: ''}, {v: f.cond || ''}, {v: f.vfr || ''}]),
+  const s1 = [[H(t('Data')), H(t('Locație')), H(t('Timp în aer')), H(t('Minute')), H(t('Decolări')), H(t('Altitudine decolare')), H(t('Altitudine maximă')), H(t('Condiții')), H(t('Nr. zbor VFR'))],
+    ...days.map(f => [{v: excelDate(f.date), s: 2}, {v: f.site}, {v: f.minutes / 1440, s: 3}, {v: f.minutes}, {v: f.launches || 1}, f.alt != null ? {v: f.alt} : {v: ''}, f.maxAlt != null ? {v: f.maxAlt} : {v: ''}, {v: f.cond || ''}, {v: f.vfr || ''}]),
     [H('Total'), {v: ''}, {f: `SUM(C2:C${n + 1})`, v: sumMinutes(days) / 1440, s: 4}, {f: `SUM(D2:D${n + 1})`, v: sumMinutes(days), s: 1}, {f: `SUM(E2:E${n + 1})`, v: days.reduce((a, f) => a + (f.launches || 1), 0), s: 1}]];
   const by = new Map();
   for (const f of list){ const x = by.get(f.site) || {site: f.site, n: 0, m: 0, last: ''}; x.n++; x.m += f.minutes; if (f.date > x.last) x.last = f.date; by.set(f.site, x); }
@@ -286,9 +286,9 @@ function xlsxParts(list, siteList, sync){
       return [{v: st.n}, {v: st.lat}, {v: st.lon}, st.alt != null ? {v: st.alt} : {v: ''}, {v: dirsOf(st.o, 2)}, {v: dirsOf(st.o, 1)}, hf > 0 ? {v: hf} : {v: hf === 0 ? t('fără') : ''}]; })];
   const NS = 'http://schemas.openxmlformats.org', X = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
   const WS = 'application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml';
-  const s4 = sync && [[{v: 'id'}, {v: 'data'}, {v: 'locatie'}, {v: 'minute'}, {v: 'modificat'}, {v: 'tip'}, {v: 'decolari'}, {v: 'altitudine'}, {v: 'conditii'}, {v: 'vfr'}],
+  const s4 = sync && [[{v: 'id'}, {v: 'data'}, {v: 'locatie'}, {v: 'minute'}, {v: 'modificat'}, {v: 'tip'}, {v: 'decolari'}, {v: 'altitudine'}, {v: 'conditii'}, {v: 'vfr'}, {v: 'alt_max'}],
     ...[...sync.flights].sort((a, b) => a.id.localeCompare(b.id)).map(f => [{v: f.id}, {v: f.date}, {v: f.site}, {v: f.minutes}, {v: f.u || 0}, {v: 'zi'},
-      f.launches ? {v: f.launches} : {v: ''}, f.alt != null ? {v: f.alt} : {v: ''}, {v: f.cond || ''}, {v: f.vfr || ''}]),
+      f.launches ? {v: f.launches} : {v: ''}, f.alt != null ? {v: f.alt} : {v: ''}, {v: f.cond || ''}, {v: f.vfr || ''}, f.maxAlt != null ? {v: f.maxAlt} : {v: ''}]),
     ...Object.entries(sync.tomb || {}).sort().map(([id, u]) => [{v: id}, {v: ''}, {v: ''}, {v: ''}, {v: u}, {v: 'sters'}]),
     // SYNC-02: siturile întregi (JSON în coloana „data”, ca să nu pierdem nimic), în ordinea listei, și siturile șterse.
     ...(sync.sites || []).map(st => { const {u, ...x} = st; return [{v: siteKey(st)}, {v: JSON.stringify(x)}, {v: st.n}, {v: ''}, {v: u || 0}, {v: 'sit'}]; }),
@@ -302,10 +302,10 @@ function xlsxParts(list, siteList, sync){
     ['xl/workbook.xml', X + `<workbook xmlns="${NS}/spreadsheetml/2006/main" xmlns:r="${NS}/officeDocument/2006/relationships"><sheets><sheet name="${xmlEsc(t('Zile de zbor'))}" sheetId="1" r:id="rId1"/><sheet name="${xmlEsc(t('Pe locații'))}" sheetId="2" r:id="rId2"/><sheet name="${xmlEsc(t('Situri'))}" sheetId="3" r:id="rId3"/>${sh4}</sheets><calcPr calcId="0" fullCalcOnLoad="1"/></workbook>`],
     ['xl/_rels/workbook.xml.rels', X + `<Relationships xmlns="${NS}/package/2006/relationships"><Relationship Id="rId1" Type="${NS}/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="${NS}/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="${NS}/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet3.xml"/><Relationship Id="rId4" Type="${NS}/officeDocument/2006/relationships/styles" Target="styles.xml"/>${rel4}</Relationships>`],
     ['xl/styles.xml', X + `<styleSheet xmlns="${NS}/spreadsheetml/2006/main"><numFmts count="2"><numFmt numFmtId="164" formatCode="dd.mm.yyyy"/><numFmt numFmtId="165" formatCode="[h]:mm"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="5"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="165" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`],
-    ['xl/worksheets/sheet1.xml', xlSheet([12, 26, 12, 10, 10, 12, 16, 16], s1)],
+    ['xl/worksheets/sheet1.xml', xlSheet([12, 26, 12, 10, 10, 12, 12, 16, 16], s1)],
     ['xl/worksheets/sheet2.xml', xlSheet([26, 13, 12, 12], s2)],
     ['xl/worksheets/sheet3.xml', xlSheet([24, 11, 11, 11, 18, 18, 9], s3)],
-    ...(s4 ? [['xl/worksheets/sheet4.xml', xlSheet([16, 12, 24, 9, 16, 7, 8, 8, 14, 14], s4)]] : []),
+    ...(s4 ? [['xl/worksheets/sheet4.xml', xlSheet([16, 12, 24, 9, 16, 7, 8, 8, 14, 14, 8], s4)]] : []),
   ];
 }
 const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++){ let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
@@ -386,11 +386,12 @@ function parseExcelMinutes(minutes, duration){
 }
 const DIR_IN = {N:0, NE:1, E:2, SE:3, S:4, SV:5, SW:5, V:6, W:6, NV:7, NW:7};
 const dirSet = v => new Set(String(v ?? '').toUpperCase().split(/[,;\s]+/).map(x => DIR_IN[x]).filter(x => x != null));
-/* JUR-02: câmpurile opționale ale unei zile din celulele [decolări, altitudine, condiții, VFR]; doar cele completate. */
-function flightExtras(l, a, c, v){
-  const o = {}, n = Math.round(num(l) || 0), alt = num(a), cond = String(c ?? '').trim(), vfr = String(v ?? '').trim();
+/* JUR-02: câmpurile opționale ale unei zile din celulele [decolări, altitudine, condiții, VFR, altitudine maximă]; doar cele completate. */
+function flightExtras(l, a, c, v, mx){
+  const o = {}, n = Math.round(num(l) || 0), alt = num(a), max = num(mx), cond = String(c ?? '').trim(), vfr = String(v ?? '').trim();
   if (n > 1) o.launches = n;
   if (alt != null) o.alt = Math.round(alt);
+  if (max != null) o.maxAlt = Math.round(max);
   if (cond) o.cond = cond;
   if (vfr) o.vfr = vfr;
   return o;
@@ -411,7 +412,7 @@ function readXlsx(files){
   const fl = [];
   for (const r of xlCells(days, shared)){
     const date = parseExcelDate(r[0]), site = String(r[1] ?? '').trim(), min = parseExcelMinutes(r[3], r[2]);
-    if (date && site && min > 0) fl.push({date, site, minutes: min, ...flightExtras(r[4], r[5], r[6], r[7])});
+    if (date && site && min > 0) fl.push({date, site, minutes: min, ...flightExtras(r[4], r[5], r[7], r[8], r[6])});
   }
   const st = [], s3 = sheet('Situri') || sheet('Sites');
   if (s3) for (const r of xlCells(s3, shared)){
@@ -437,7 +438,7 @@ function readSync(files){
       continue;
     }
     const date = String(r[1] ?? '').trim(), site = String(r[2] ?? '').trim(), minutes = Math.round(num(r[3]) || 0);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(date) && site && minutes > 0) flights.push({id, date, site, minutes, u, ...flightExtras(r[6], r[7], r[8], r[9])});
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date) && site && minutes > 0) flights.push({id, date, site, minutes, u, ...flightExtras(r[6], r[7], r[8], r[9], r[10])});
   }
   // sites = null: fișier scris de o versiune fără sincronizarea siturilor (atunci se folosește foaia „Situri”).
   return {flights, tomb, sites: hasSites ? sites : null, stomb};

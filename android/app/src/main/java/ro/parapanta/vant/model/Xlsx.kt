@@ -24,7 +24,7 @@ fun excelDate(d: String): Long = ChronoUnit.DAYS.between(LocalDate.of(1899, 12, 
 private fun days(min: Int) = (min / 1440.0).toString()
 
 private fun row(r: Int, cells: List<Cell>) = "<row r=\"$r\">" + cells.mapIndexed { i, c ->
-    val ref = "ABCDEFGH"[i] + r.toString()
+    val ref = "ABCDEFGHI"[i] + r.toString()
     fun st(s: Int) = if (s != 0) " s=\"$s\"" else ""
     when (c) {
         is Formula -> "<c r=\"$ref\" s=\"${c.s}\"><f>${c.f}</f><v>${c.v}</v></c>"
@@ -45,10 +45,10 @@ fun xlsxParts(list: List<Flight>, sites: List<Site>): List<Pair<String, String>>
     val n = sorted.size
     val total = sorted.sumOf { it.minutes }
     // JUR-02: decolări (lipsă = 1), altitudinea decolării, condițiile, numărul zborului VFR. La fel ca pe web.
-    val s1 = listOf(listOf<Cell>(h("Data"), h("Locație"), h("Timp în aer"), h("Minute"), h("Decolări"), h("Altitudine decolare"), h("Condiții"), h("Nr. zbor VFR"))) +
+    val s1 = listOf(listOf<Cell>(h("Data"), h("Locație"), h("Timp în aer"), h("Minute"), h("Decolări"), h("Altitudine decolare"), h("Altitudine maximă"), h("Condiții"), h("Nr. zbor VFR"))) +
         sorted.map {
             listOf(Num(excelDate(it.date).toString(), 2), Str(it.site), Num(days(it.minutes), 3), Num(it.minutes.toString()),
-                Num((it.launches ?: 1).toString()), it.alt?.let { a -> Num(a.toString()) } ?: Str(""), Str(it.cond ?: ""), Str(it.vfr ?: ""))
+                Num((it.launches ?: 1).toString()), it.alt?.let { a -> Num(a.toString()) } ?: Str(""), it.maxAlt?.let { a -> Num(a.toString()) } ?: Str(""), Str(it.cond ?: ""), Str(it.vfr ?: ""))
         } +
         listOf(listOf(h("Total"), Str(""), Formula("SUM(C2:C${n + 1})", days(total), 4), Formula("SUM(D2:D${n + 1})", total.toString(), 1),
             Formula("SUM(E2:E${n + 1})", sorted.sumOf { it.launches ?: 1 }.toString(), 1)))
@@ -69,7 +69,7 @@ fun xlsxParts(list: List<Flight>, sites: List<Site>): List<Pair<String, String>>
         "xl/workbook.xml" to x + "<workbook xmlns=\"$ns/spreadsheetml/2006/main\" xmlns:r=\"$ns/officeDocument/2006/relationships\"><sheets><sheet name=\"Zile de zbor\" sheetId=\"1\" r:id=\"rId1\"/><sheet name=\"Pe locații\" sheetId=\"2\" r:id=\"rId2\"/><sheet name=\"Situri\" sheetId=\"3\" r:id=\"rId3\"/></sheets><calcPr calcId=\"0\" fullCalcOnLoad=\"1\"/></workbook>",
         "xl/_rels/workbook.xml.rels" to x + "<Relationships xmlns=\"$ns/package/2006/relationships\"><Relationship Id=\"rId1\" Type=\"$ns/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet1.xml\"/><Relationship Id=\"rId2\" Type=\"$ns/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet2.xml\"/><Relationship Id=\"rId3\" Type=\"$ns/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet3.xml\"/><Relationship Id=\"rId4\" Type=\"$ns/officeDocument/2006/relationships/styles\" Target=\"styles.xml\"/></Relationships>",
         "xl/styles.xml" to x + "<styleSheet xmlns=\"$ns/spreadsheetml/2006/main\"><numFmts count=\"2\"><numFmt numFmtId=\"164\" formatCode=\"dd.mm.yyyy\"/><numFmt numFmtId=\"165\" formatCode=\"[h]:mm\"/></numFmts><fonts count=\"2\"><font><sz val=\"11\"/><name val=\"Calibri\"/></font><font><b/><sz val=\"11\"/><name val=\"Calibri\"/></font></fonts><fills count=\"2\"><fill><patternFill patternType=\"none\"/></fill><fill><patternFill patternType=\"gray125\"/></fill></fills><borders count=\"1\"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count=\"1\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\"/></cellStyleXfs><cellXfs count=\"5\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\"/><xf numFmtId=\"0\" fontId=\"1\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyFont=\"1\"/><xf numFmtId=\"164\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyNumberFormat=\"1\"/><xf numFmtId=\"165\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyNumberFormat=\"1\"/><xf numFmtId=\"165\" fontId=\"1\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyFont=\"1\" applyNumberFormat=\"1\"/></cellXfs><cellStyles count=\"1\"><cellStyle name=\"Normal\" xfId=\"0\" builtinId=\"0\"/></cellStyles></styleSheet>",
-        "xl/worksheets/sheet1.xml" to sheet(listOf(12, 26, 12, 10, 10, 12, 16, 16), s1),
+        "xl/worksheets/sheet1.xml" to sheet(listOf(12, 26, 12, 10, 10, 12, 12, 16, 16), s1),
         "xl/worksheets/sheet2.xml" to sheet(listOf(26, 13, 12, 12), s2),
         "xl/worksheets/sheet3.xml" to sheet(listOf(24, 11, 11, 11, 18, 18, 9), s3),
     )
@@ -170,7 +170,7 @@ fun readXlsx(bytes: ByteArray): XlsxImport? {
         if (min <= 0) return@mapNotNull null
         val n = r[4]?.trim()?.toDoubleOrNull()?.roundToInt() ?: 0
         Flight("", date, site, min, launches = n.takeIf { it > 1 }, alt = r[5]?.trim()?.toDoubleOrNull()?.roundToInt(),
-            cond = r[6]?.trim()?.ifEmpty { null }, vfr = r[7]?.trim()?.ifEmpty { null })
+            maxAlt = r[6]?.trim()?.toDoubleOrNull()?.roundToInt(), cond = r[7]?.trim()?.ifEmpty { null }, vfr = r[8]?.trim()?.ifEmpty { null })
     }
     val sites = (sheet("Situri") ?: sheet("Sites"))?.let { x ->
         cells(x, shared).mapNotNull { r ->

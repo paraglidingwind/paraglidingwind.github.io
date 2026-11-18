@@ -399,15 +399,17 @@ details.hfbox .hf-in{padding:0 12px 12px}
       <p class="hint" id="flTotal" style="font-weight:600;color:var(--ink)"></p>
       <div class="two">
         <div><label class="f" for="flN">Decolări</label><input class="in" id="flN" type="number" min="1" max="50" inputmode="numeric" placeholder="1"></div>
-        <div><label class="f" for="flAlt">Altitudine decolare (m)</label><input class="in" id="flAlt" type="number" inputmode="numeric" placeholder="—"></div>
+        <div><label class="f" for="flVfr">Nr. zbor VFR</label><input class="in" id="flVfr" placeholder="ex: 1234" autocomplete="off" maxlength="60"></div>
       </div>
-      <p class="hint">Câte zboruri ai făcut în ziua aceea. Altitudinea se completează din sit; o poți schimba.</p>
+      <p class="hint">Câte zboruri ai făcut în ziua aceea. Pentru mai multe zboruri VFR, scrie numerele separate prin virgulă.</p>
+      <div class="two">
+        <div><label class="f" for="flAlt">Altitudine decolare (m)</label><input class="in" id="flAlt" type="number" min="0" max="9000" inputmode="numeric" placeholder="—"></div>
+        <div><label class="f" for="flMax">Altitudine maximă (m)</label><input class="in" id="flMax" type="number" min="0" max="9000" inputmode="numeric" placeholder="opțional"></div>
+      </div>
+      <p class="hint" id="flAltHint">Altitudinea decolării se ia din detaliile sitului; o poți schimba.</p>
       <label class="f" id="flCondL">Condiții</label>
       <div class="chips fl-cond" id="flCond" role="group" aria-labelledby="flCondL"></div>
       <div class="fl-new" id="flCondNew" hidden><input class="in" id="flCondTxt" placeholder="ex: Briză de vale" autocomplete="off" maxlength="40" aria-label="Condiție nouă"><button class="btn small" type="button" id="flCondAdd">Adaugă</button></div>
-      <label class="f" for="flVfr">Nr. zbor VFR (opțional)</label>
-      <input class="in" id="flVfr" placeholder="ex: 1234" autocomplete="off" maxlength="60">
-      <p class="hint">Pentru mai multe zboruri, scrie numerele separate prin virgulă.</p>
       <p class="err" id="flErr" hidden></p>
       <div class="actions">
         <button class="btn primary" type="submit">Salvează</button>
@@ -1057,7 +1059,7 @@ function toast(msg, undo){
 }
 
 /* ---------- jurnal ---------- */
-/* O intrare = o zi de zbor pe o locație: {id, date: 'AAAA-LL-ZZ', site, minutes} și, opțional (JUR-02), launches (lipsă = 1), alt, cond, vfr. */
+/* O intrare = o zi de zbor pe o locație: {id, date: 'AAAA-LL-ZZ', site, minutes} și, opțional (JUR-02), launches (lipsă = 1), alt, maxAlt, cond, vfr. */
 let flights = store.get('vld.flights', []);
 let logView = 'days', logSite = null, logYear = null, editingId = null;   // logYear: „2025” = doar zborurile din anul acela
 const saveFlights = () => store.set('vld.flights', flights);
@@ -1097,7 +1099,7 @@ function renderLog(){
     for (const f of list){ const k = f.date.slice(0, 7); if (!months.has(k)) months.set(k, []); months.get(k).push(f); }
     for (const [k, fs] of months){
       html += `<h3>${monthName(k)} <small>${t('· {d} în {z}', {d: fmtDur(total(fs)), z: zile(fs.length)})}</small></h3><div class="list">`
-        + fs.map(f => `<button class="row" type="button" data-fl="${f.id}"><div class="t"><b>${esc(f.site)}</b><span>${[fmtDay(f.date), f.launches > 1 ? t('{n} decolări', {n: f.launches}) : '', f.cond ? esc(COND_BASE.includes(f.cond) ? t(f.cond) : f.cond) : ''].filter(Boolean).join(' · ')}</span></div><span class="dur">${fmtDur(f.minutes)}</span></button>`).join('')
+        + fs.map(f => `<button class="row" type="button" data-fl="${f.id}"><div class="t"><b>${esc(f.site)}</b><span>${[fmtDay(f.date), f.launches > 1 ? t('{n} decolări', {n: f.launches}) : '', f.maxAlt != null ? t('max {m} m', {m: f.maxAlt}) : '', f.cond ? esc(COND_BASE.includes(f.cond) ? t(f.cond) : f.cond) : ''].filter(Boolean).join(' · ')}</span></div><span class="dur">${fmtDur(f.minutes)}</span></button>`).join('')
         + '</div>';
     }
   } else if (logView === 'years'){
@@ -1142,6 +1144,21 @@ function renderCond(){
     + `<button class="chipb" type="button" id="flCondMore" aria-expanded="${!$('#flCondNew').hidden}">${t('+ Alta…')}</button>`;
 }
 const siteAlt = name => sites.find(s => s.n === name)?.alt ?? null;
+/* Altitudinea decolării: din detaliile sitului; dacă situl n-o are (ex. unele decolări ParaglidingEarth), din relief (Open-Meteo),
+   doar cât timp pilotul n-a scris-o el. */
+let altReq = 0;
+async function fillAlt(name){
+  if (!flAltAuto) return;
+  const a = siteAlt(name), s = sites.find(x => x.n === name), hint = $('#flAltHint');
+  $('#flAlt').value = a ?? ''; hint.textContent = t('Altitudinea decolării se ia din detaliile sitului; o poți schimba.');
+  if (a != null || !s) return;
+  const req = ++altReq;
+  try {
+    const r = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${s.lat.toFixed(5)}&longitude=${s.lon.toFixed(5)}`);
+    const e = r.ok ? (await r.json()).elevation?.[0] : null;
+    if (req === altReq && flAltAuto && isFinite(e)){ $('#flAlt').value = Math.round(e); hint.textContent = t('Situl nu are altitudinea în detalii: am pus-o pe cea a terenului (Open-Meteo). Verific-o.'); }
+  } catch {}
+}
 function openFlight(f = {}){
   editingId = f.id || null;
   $('#flTitle').textContent = t(editingId ? 'Editează ziua de zbor' : 'Zi de zbor');
@@ -1159,7 +1176,8 @@ function openFlight(f = {}){
   $('#flM').value = f.minutes != null ? f.minutes % 60 : '';
   $('#flN').value = f.launches || '';
   flAltAuto = f.alt == null;
-  const a = f.alt ?? (editingId ? null : siteAlt(cur)); $('#flAlt').value = a ?? '';
+  if (f.alt != null) $('#flAlt').value = f.alt; else if (!editingId) fillAlt(cur); else $('#flAlt').value = '';
+  $('#flMax').value = f.maxAlt ?? '';
   flCond = f.cond || ''; $('#flCondNew').hidden = true; $('#flCondTxt').value = ''; renderCond();
   $('#flVfr').value = f.vfr || '';
   $('#flErr').hidden = true;
@@ -1179,7 +1197,7 @@ $('#flM').addEventListener('change', () => {
 });
 $('#flSite').addEventListener('change', e => {
   $('#flSiteOther').hidden = e.target.value !== '__other'; if (!$('#flSiteOther').hidden) $('#flSiteOther').focus();
-  if (flAltAuto) $('#flAlt').value = siteAlt(e.target.value) ?? '';   // altitudinea urmează situl, până o scrii tu
+  fillAlt(e.target.value);   // altitudinea urmează situl, până o scrii tu
 });
 $('#flAlt').addEventListener('input', () => { flAltAuto = false; });
 function addCond(){
@@ -1201,8 +1219,11 @@ $('#flForm').addEventListener('submit', e => {
   const err = $('#flErr'), msg = validateFlight(site, date, h, m, localDate(new Date()));
   if (msg){ err.textContent = msg; err.hidden = false; return; }
   if ($('#flCondTxt').value.trim()) addCond();   // a scris o condiție nouă dar n-a apăsat „Adaugă”
-  const n = parseInt($('#flN').value, 10), alt = parseInt($('#flAlt').value, 10), vfr = $('#flVfr').value.trim();
-  const extra = {launches: n > 1 ? Math.min(n, 50) : undefined, alt: isFinite(alt) ? alt : undefined, cond: flCond || undefined, vfr: vfr || undefined};
+  const n = parseInt($('#flN').value, 10), alt = parseInt($('#flAlt').value, 10), max = parseInt($('#flMax').value, 10), vfr = $('#flVfr').value.trim();
+  const altMsg = [alt, max].some(v => isFinite(v) && (v < 0 || v > 9000)) ? t('Altitudinea trebuie să fie între 0 și 9000 m.')
+    : isFinite(alt) && isFinite(max) && max < alt ? t('Altitudinea maximă nu poate fi sub cea a decolării.') : '';
+  if (altMsg){ err.textContent = altMsg; err.hidden = false; return; }
+  const extra = {launches: n > 1 ? Math.min(n, 50) : undefined, alt: isFinite(alt) ? alt : undefined, maxAlt: isFinite(max) ? max : undefined, cond: flCond || undefined, vfr: vfr || undefined};
   if (editingId){ const f = flights.find(x => x.id === editingId); Object.assign(f, {site, date, minutes, u: Date.now()}, extra); for (const k in extra) if (extra[k] === undefined) delete f[k]; }
   else flights.push(JSON.parse(JSON.stringify({id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date, site, minutes, u: Date.now(), ...extra})));
   markDirty();

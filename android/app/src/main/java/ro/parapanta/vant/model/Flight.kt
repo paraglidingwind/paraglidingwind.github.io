@@ -4,10 +4,10 @@ import kotlinx.serialization.Serializable
 
 /** O zi de zbor pe o locație. [date] = AAAA-LL-ZZ. Salvat doar pe telefon. Același format ca pe web.
  *  JUR-02 (opționale, completate deocamdată doar pe web): [launches] decolări în ziua aceea (lipsă = 1), [alt] altitudinea
- *  decolării în m, [cond] condițiile (Dinamic, Termic, Termodinamic sau un text al pilotului), [vfr] numărul zborului VFR. */
+ *  decolării în m, [maxAlt] altitudinea maximă atinsă în m, [cond] condițiile (Dinamic, Termic, Termodinamic sau un text al pilotului), [vfr] numărul zborului VFR. */
 @Serializable
 data class Flight(val id: String, val date: String, val site: String, val minutes: Int,
-                  val launches: Int? = null, val alt: Int? = null, val cond: String? = null, val vfr: String? = null)
+                  val launches: Int? = null, val alt: Int? = null, val maxAlt: Int? = null, val cond: String? = null, val vfr: String? = null)
 
 data class MonthGroup(val key: String, val flights: List<Flight>) {
     val minutes get() = flights.sumOf { it.minutes }

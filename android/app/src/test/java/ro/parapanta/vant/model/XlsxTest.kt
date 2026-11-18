@@ -13,7 +13,7 @@ class XlsxTest {
         Site("Rimetea E", 46.4543, 23.5373, 1176, listOf(0, 1, 2, 2, 1, 0, 0, 0), hf = 243),
     )
     private val fl = listOf(
-        Flight("a1", "2026-10-03", "Liteni", 95, launches = 2, alt = 895, cond = "Termic", vfr = "VFR 1234, 1235"), Flight("a2", "2026-09-27", "Rimetea E", 40, cond = "Briză & „vale”"),
+        Flight("a1", "2026-10-03", "Liteni", 95, launches = 2, alt = 895, maxAlt = 2140, cond = "Termic", vfr = "VFR 1234, 1235"), Flight("a2", "2026-09-27", "Rimetea E", 40, cond = "Briză & „vale”"),
         Flight("a3", "2026-09-14", "Liteni", 180), Flight("a4", "2026-08-30", "Agriș S", 25),
     )
 
