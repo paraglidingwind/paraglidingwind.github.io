@@ -244,6 +244,8 @@ dialog.tall .sheet .body{flex:1;min-height:0;display:flex;flex-direction:column}
 .chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px;font-size:13px;color:var(--muted);flex:0 0 auto}
 .chipb{min-height:44px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-weight:600;color:var(--ink)}
 .chipb[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.fl-cond{margin-top:4px;font-size:15px}
+.fl-new{display:flex;gap:8px;margin-top:8px}.fl-new .in{flex:1}
 .pk-tools{display:flex;gap:8px;align-items:center;margin-top:10px;flex:0 0 auto}
 .pk-tools .in{flex:1;min-width:0}
 .pk-tools .grow{flex:1;font-size:13px;color:var(--muted)}
@@ -395,6 +397,17 @@ details.hfbox .hf-in{padding:0 12px 12px}
         <div><input class="in" id="flM" type="number" min="0" inputmode="numeric" placeholder="0" aria-label="Minute"><p class="hint">minute</p></div>
       </div>
       <p class="hint" id="flTotal" style="font-weight:600;color:var(--ink)"></p>
+      <div class="two">
+        <div><label class="f" for="flN">Decolări</label><input class="in" id="flN" type="number" min="1" max="50" inputmode="numeric" placeholder="1"></div>
+        <div><label class="f" for="flAlt">Altitudine decolare (m)</label><input class="in" id="flAlt" type="number" inputmode="numeric" placeholder="—"></div>
+      </div>
+      <p class="hint">Câte zboruri ai făcut în ziua aceea. Altitudinea se completează din sit; o poți schimba.</p>
+      <label class="f" id="flCondL">Condiții</label>
+      <div class="chips fl-cond" id="flCond" role="group" aria-labelledby="flCondL"></div>
+      <div class="fl-new" id="flCondNew" hidden><input class="in" id="flCondTxt" placeholder="ex: Briză de vale" autocomplete="off" maxlength="40" aria-label="Condiție nouă"><button class="btn small" type="button" id="flCondAdd">Adaugă</button></div>
+      <label class="f" for="flVfr">Nr. zbor VFR (opțional)</label>
+      <input class="in" id="flVfr" placeholder="ex: 1234" autocomplete="off" maxlength="60">
+      <p class="hint">Pentru mai multe zboruri, scrie numerele separate prin virgulă.</p>
       <p class="err" id="flErr" hidden></p>
       <div class="actions">
         <button class="btn primary" type="submit">Salvează</button>
@@ -1044,7 +1057,7 @@ function toast(msg, undo){
 }
 
 /* ---------- jurnal ---------- */
-/* O intrare = o zi de zbor pe o locație: {id, date: 'AAAA-LL-ZZ', site, minutes}. Salvat doar pe acest telefon. */
+/* O intrare = o zi de zbor pe o locație: {id, date: 'AAAA-LL-ZZ', site, minutes} și, opțional (JUR-02), launches (lipsă = 1), alt, cond, vfr. */
 let flights = store.get('vld.flights', []);
 let logView = 'days', logSite = null, logYear = null, editingId = null;   // logYear: „2025” = doar zborurile din anul acela
 const saveFlights = () => store.set('vld.flights', flights);
@@ -1084,7 +1097,7 @@ function renderLog(){
     for (const f of list){ const k = f.date.slice(0, 7); if (!months.has(k)) months.set(k, []); months.get(k).push(f); }
     for (const [k, fs] of months){
       html += `<h3>${monthName(k)} <small>${t('· {d} în {z}', {d: fmtDur(total(fs)), z: zile(fs.length)})}</small></h3><div class="list">`
-        + fs.map(f => `<button class="row" type="button" data-fl="${f.id}"><div class="t"><b>${esc(f.site)}</b><span>${fmtDay(f.date)}</span></div><span class="dur">${fmtDur(f.minutes)}</span></button>`).join('')
+        + fs.map(f => `<button class="row" type="button" data-fl="${f.id}"><div class="t"><b>${esc(f.site)}</b><span>${[fmtDay(f.date), f.launches > 1 ? t('{n} decolări', {n: f.launches}) : '', f.cond ? esc(COND_BASE.includes(f.cond) ? t(f.cond) : f.cond) : ''].filter(Boolean).join(' · ')}</span></div><span class="dur">${fmtDur(f.minutes)}</span></button>`).join('')
         + '</div>';
     }
   } else if (logView === 'years'){
@@ -1115,6 +1128,20 @@ function yearsHtml(){
       + `<span class="ybars" aria-hidden="true">${x.months.map(v => `<i class="${v ? '' : 'z'}" style="height:${v ? Math.max(8, Math.round(v / top * 100)) : 6}%"></i>`).join('')}</span></button>`).join('')
     + '</div>';
 }
+/* JUR-02: condițiile de zbor. Trei fixe, plus cele scrise de pilot (din jurnal, cele mai folosite primele), ca să rămână de ales. */
+const COND_BASE = ['Dinamic', 'Termic', 'Termodinamic'];
+let flCond = '', flAltAuto = true;
+function condOptions(){
+  const n = new Map();
+  for (const f of flights) if (f.cond && !COND_BASE.includes(f.cond)) n.set(f.cond, (n.get(f.cond) || 0) + 1);
+  if (flCond && !COND_BASE.includes(flCond) && !n.has(flCond)) n.set(flCond, 0);
+  return [...COND_BASE, ...[...n].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(x => x[0])];
+}
+function renderCond(){
+  $('#flCond').innerHTML = condOptions().map(c => `<button class="chipb" type="button" data-cond="${esc(c)}" aria-pressed="${c === flCond}">${esc(COND_BASE.includes(c) ? t(c) : c)}</button>`).join('')
+    + `<button class="chipb" type="button" id="flCondMore" aria-expanded="${!$('#flCondNew').hidden}">${t('+ Alta…')}</button>`;
+}
+const siteAlt = name => sites.find(s => s.n === name)?.alt ?? null;
 function openFlight(f = {}){
   editingId = f.id || null;
   $('#flTitle').textContent = t(editingId ? 'Editează ziua de zbor' : 'Zi de zbor');
@@ -1130,6 +1157,11 @@ function openFlight(f = {}){
   $('#flDate').value = f.date || today;
   $('#flH').value = f.minutes != null ? Math.floor(f.minutes / 60) : '';
   $('#flM').value = f.minutes != null ? f.minutes % 60 : '';
+  $('#flN').value = f.launches || '';
+  flAltAuto = f.alt == null;
+  const a = f.alt ?? (editingId ? null : siteAlt(cur)); $('#flAlt').value = a ?? '';
+  flCond = f.cond || ''; $('#flCondNew').hidden = true; $('#flCondTxt').value = ''; renderCond();
+  $('#flVfr').value = f.vfr || '';
   $('#flErr').hidden = true;
   showFlTotal();
   const del = $('#flDelete'); del.hidden = !editingId; delete del.dataset.armed; del.textContent = t('Șterge');
@@ -1145,15 +1177,34 @@ $('#flM').addEventListener('change', () => {
   const m = parseInt($('#flM').value, 10) || 0;
   if (m >= 60){ $('#flH').value = (parseInt($('#flH').value, 10) || 0) + Math.floor(m / 60); $('#flM').value = m % 60; showFlTotal(); }
 });
-$('#flSite').addEventListener('change', e => { $('#flSiteOther').hidden = e.target.value !== '__other'; if (!$('#flSiteOther').hidden) $('#flSiteOther').focus(); });
+$('#flSite').addEventListener('change', e => {
+  $('#flSiteOther').hidden = e.target.value !== '__other'; if (!$('#flSiteOther').hidden) $('#flSiteOther').focus();
+  if (flAltAuto) $('#flAlt').value = siteAlt(e.target.value) ?? '';   // altitudinea urmează situl, până o scrii tu
+});
+$('#flAlt').addEventListener('input', () => { flAltAuto = false; });
+function addCond(){
+  const c = $('#flCondTxt').value.trim().replace(/\s+/g, ' '); if (!c) return $('#flCondTxt').focus();
+  flCond = COND_BASE.find(x => x.toLowerCase() === c.toLowerCase() || t(x).toLowerCase() === c.toLowerCase()) || condOptions().find(x => x.toLowerCase() === c.toLowerCase()) || c;
+  $('#flCondNew').hidden = true; $('#flCondTxt').value = ''; renderCond();
+}
+$('#flCondTxt').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); addCond(); } });
+$('#flCond').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'flCondMore'){ $('#flCondNew').hidden = !$('#flCondNew').hidden; renderCond(); if (!$('#flCondNew').hidden) $('#flCondTxt').focus(); return; }
+  flCond = flCond === b.dataset.cond ? '' : b.dataset.cond; renderCond();   // a doua atingere deselectează
+});
+$('#flCondAdd').addEventListener('click', addCond);
 $('#flForm').addEventListener('submit', e => {
   e.preventDefault();
   const site = ($('#flSite').value === '__other' ? $('#flSiteOther').value : $('#flSite').value).trim();
   const date = $('#flDate').value, h = parseInt($('#flH').value, 10) || 0, m = parseInt($('#flM').value, 10) || 0, minutes = h * 60 + m;
   const err = $('#flErr'), msg = validateFlight(site, date, h, m, localDate(new Date()));
   if (msg){ err.textContent = msg; err.hidden = false; return; }
-  if (editingId){ const f = flights.find(x => x.id === editingId); Object.assign(f, {site, date, minutes, u: Date.now()}); }
-  else flights.push({id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date, site, minutes, u: Date.now()});
+  if ($('#flCondTxt').value.trim()) addCond();   // a scris o condiție nouă dar n-a apăsat „Adaugă”
+  const n = parseInt($('#flN').value, 10), alt = parseInt($('#flAlt').value, 10), vfr = $('#flVfr').value.trim();
+  const extra = {launches: n > 1 ? Math.min(n, 50) : undefined, alt: isFinite(alt) ? alt : undefined, cond: flCond || undefined, vfr: vfr || undefined};
+  if (editingId){ const f = flights.find(x => x.id === editingId); Object.assign(f, {site, date, minutes, u: Date.now()}, extra); for (const k in extra) if (extra[k] === undefined) delete f[k]; }
+  else flights.push(JSON.parse(JSON.stringify({id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date, site, minutes, u: Date.now(), ...extra})));
   markDirty();
   saveFlights(); $('#dlgFlight').close();
   if (!$('#dlgLog').open) openLog(); else renderLog();

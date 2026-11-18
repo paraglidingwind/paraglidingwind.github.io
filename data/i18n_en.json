@@ -465,5 +465,18 @@
   "Adu siturile și jurnalul din Google Drive": "Bring your sites and log from Google Drive",
   "În Google Drive nu sunt situri încă. Alege-le mai jos.": "There are no sites in Google Drive yet. Pick them below.",
   "1 sit adus din Google Drive": "1 site brought from Google Drive",
-  "{n} situri aduse din Google Drive": "{n} sites brought from Google Drive"
+  "{n} situri aduse din Google Drive": "{n} sites brought from Google Drive",
+  "Decolări": "Takeoffs",
+  "Câte zboruri ai făcut în ziua aceea. Altitudinea se completează din sit; o poți schimba.": "How many flights you made that day. The altitude comes from the site; you can change it.",
+  "Condiții": "Conditions",
+  "Condiție nouă": "New condition",
+  "Adaugă": "Add",
+  "Nr. zbor VFR (opțional)": "VFR flight no. (optional)",
+  "Pentru mai multe zboruri, scrie numerele separate prin virgulă.": "For several flights, separate the numbers with commas.",
+  "Dinamic": "Dynamic",
+  "Termic": "Thermal",
+  "Termodinamic": "Thermo-dynamic",
+  "+ Alta…": "+ Other…",
+  "Altitudine decolare": "Takeoff altitude",
+  "Nr. zbor VFR": "VFR flight no."
 }

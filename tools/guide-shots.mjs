@@ -231,11 +231,13 @@ const SHOTS = {
       ['#exportXlsx', 'tr', {dx: -4, dy: 4}], ['#logBody .seg', 'tr', {dx: -6, dy: 4}], ['#logBody .list .row', 'b', {i: 0}]]);`,
     clip: `return __sheet()`},
   // O zi de zbor nouă.
-  zi: {state: BOARD, run: `${board}
+  zi: {state: BOARD, h: 1150, run: `${board}
     __el('#log').click(); await __until(() => document.querySelector('#addFlight')); __el('#addFlight').click();
     await __until(() => document.querySelector('#dlgFlight[open]'));
-    __el('#flSite').value = 'Agriș N'; __el('#flH').value = 1; __el('#flM').value = 20; showFlTotal();
-    __mark([['#flSite', 'tr', {dx: -44, dy: 2}], ['#flDate', 'tr', {dx: -44, dy: 2}], ['#dlgFlight .two', 'tr', {dx: -8, dy: 4}], ['#dlgFlight .btn.primary', 'r', {dx: 16}]]);`,
+    __el('#flSite').value = 'Agriș N'; __el('#flSite').dispatchEvent(new Event('change')); __el('#flH').value = 1; __el('#flM').value = 20; showFlTotal();
+    __el('#flN').value = 2; __el('#flCond [data-cond="Termic"]').click(); __el('#flVfr').value = '1234, 1235';
+    __mark([['#flSite', 'tr', {dx: -44, dy: 2}], ['#flDate', 'tr', {dx: -44, dy: 2}], ['#dlgFlight .two', 'tr', {dx: -8, dy: 4}], ['#dlgFlight .two', 'tr', {i: 1, dx: -8, dy: 4}],
+      ['#flCondMore', 'r', {dx: 16}], ['#flVfr', 'tr', {dx: -8, dy: 4}], ['#dlgFlight .btn.primary', 'r', {dx: 16}]]);`,
     clip: `return __sheet()`},
   // Jurnalul, pe ani.
   ani: {state: BOARD, h: 900, run: `${board}

@@ -12,8 +12,8 @@ const sites = [
   {n: 'Rimetea E', lat: 46.4543, lon: 23.5373, alt: 1176, o: [0, 1, 2, 2, 1, 0, 0, 0], hf: 243},
 ];
 const flights = [
-  {id: 'a1', date: '2026-10-03', site: 'Liteni', minutes: 95, u: 1759500000000},
-  {id: 'a2', date: '2026-09-27', site: 'Rimetea E', minutes: 40, u: 1759000000000},
+  {id: 'a1', date: '2026-10-03', site: 'Liteni', minutes: 95, u: 1759500000000, launches: 2, alt: 895, cond: 'Termic', vfr: 'VFR 1234, 1235'},
+  {id: 'a2', date: '2026-09-27', site: 'Rimetea E', minutes: 40, u: 1759000000000, cond: 'Briză & „vale”'},
   {id: 'a3', date: '2026-09-14', site: 'Liteni', minutes: 180, u: 1758000000000},
   {id: 'a4', date: '2026-08-30', site: 'Agriș S', minutes: 25, u: 1757000000000},
 ];
@@ -69,4 +69,12 @@ test('SYNC-02: siturile și ștergerile lor trec prin backup-ul din Drive', asyn
   // Un fișier scris de versiunea fără situri în „_sync”: sites = null (se folosește foaia „Situri”).
   const old = core.readSync(await core.unzip((await bytes(core.xlsxParts([], sts, {flights: [], tomb: {}}))).buffer));
   assert.equal(old.sites, null);
+});
+
+test('JUR-02: decolările, altitudinea, condițiile și VFR trec prin export și prin backup-ul din Drive', async () => {
+  const pick = l => l.map(f => [f.date, f.launches ?? null, f.alt ?? null, f.cond ?? null, f.vfr ?? null]).sort((a, b) => a[0].localeCompare(b[0]));
+  const back = core.readXlsx(await core.unzip((await bytes(core.xlsxParts(flights, sites))).buffer));
+  assert.deepEqual(pick(back.flights), pick(flights));
+  const st = core.readSync(await core.unzip((await bytes(core.xlsxParts(flights, sites, {flights, tomb}))).buffer));
+  assert.deepEqual(pick(st.flights), pick(flights));
 });
