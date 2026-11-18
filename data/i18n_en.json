@@ -383,7 +383,6 @@
   "Prognoză": "Forecast",
   "Jurnal": "Log",
   "Setări": "Settings",
-  "Adaugă o decolare care nu e în listă": "Add a takeoff that is not in the list",
   "Limba": "Language",
   "Despre": "About",
   "Prognoza: Open-Meteo · Decolări: ParaglidingEarth (CC BY-SA) · Vânt live: Holfuy": "Forecast: Open-Meteo · Takeoffs: ParaglidingEarth (CC BY-SA) · Live wind: Holfuy",
@@ -454,5 +453,17 @@
   "metri pe secundă": "metres per second",
   "kilometri pe oră": "kilometres per hour",
   "noduri": "knots",
-  "mile pe oră": "miles per hour"
+  "mile pe oră": "miles per hour",
+  "Adaugă o decolare": "Add a takeoff",
+  "Din lista de decolări": "From the takeoff list",
+  "Nouă, pe hartă": "New, on the map",
+  "Lista are decolările din ParaglidingEarth. Dacă a ta nu e acolo, o pui tu pe hartă.": "The list has the ParaglidingEarth takeoffs. If yours is not there, put it on the map yourself.",
+  "Decolare nouă": "New takeoff",
+  "Nu găsești decolarea?": "Can't find the takeoff?",
+  "Pune-o pe hartă": "Put it on the map",
+  "Folosești aplicația pe alt dispozitiv?": "Using the app on another device?",
+  "Adu siturile și jurnalul din Google Drive": "Bring your sites and log from Google Drive",
+  "În Google Drive nu sunt situri încă. Alege-le mai jos.": "There are no sites in Google Drive yet. Pick them below.",
+  "1 sit adus din Google Drive": "1 site brought from Google Drive",
+  "{n} situri aduse din Google Drive": "{n} sites brought from Google Drive"
 }

@@ -165,6 +165,20 @@ function syncMerge(a, b){
   return {flights: [...by.values()], tomb: tb};
 }
 
+/* SYNC-02: unirea listelor de situri (local + Drive). Cheia = coordonatele (ca key() din pagină); pe fiecare cheie
+   câștigă modificarea mai nouă (u), la egalitate rămâne varianta locală; ștergerile (stomb) mai noi șterg.
+   Ordinea: lista locală, apoi siturile venite din Drive, în ordinea de acolo. */
+const siteKey = s => (+s.lat).toFixed(4) + ',' + (+s.lon).toFixed(4);
+function siteMerge(a, b){
+  const tb = {...(b.stomb || {})};
+  for (const [k, u] of Object.entries(a.stomb || {})) if (!(tb[k] >= u)) tb[k] = u;
+  const by = new Map();
+  for (const s of a.sites || []){ const k = siteKey(s); if (!by.has(k)) by.set(k, s); }
+  for (const s of b.sites || []){ const k = siteKey(s), cur = by.get(k); if (!cur || (s.u || 0) > (cur.u || 0)) by.set(k, s); }
+  for (const [k, u] of Object.entries(tb)){ const s = by.get(k); if (s && (s.u || 0) <= u) by.delete(k); }
+  return {sites: [...by.values()], stomb: tb};
+}
+
 /* ---------- rețea ---------- */
 /* FIA-02: fiecare încercare are 15 s; la o eroare de rețea sau 5xx mai încercăm de 2 ori, după 2 s și după 6 s. */
 async function fetchRetry(url, waits = [2000, 6000], get = (u, o) => fetch(u, o)){
@@ -273,7 +287,10 @@ function xlsxParts(list, siteList, sync){
   const WS = 'application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml';
   const s4 = sync && [[{v: 'id'}, {v: 'data'}, {v: 'locatie'}, {v: 'minute'}, {v: 'modificat'}, {v: 'tip'}],
     ...[...sync.flights].sort((a, b) => a.id.localeCompare(b.id)).map(f => [{v: f.id}, {v: f.date}, {v: f.site}, {v: f.minutes}, {v: f.u || 0}, {v: 'zi'}]),
-    ...Object.entries(sync.tomb || {}).sort().map(([id, u]) => [{v: id}, {v: ''}, {v: ''}, {v: ''}, {v: u}, {v: 'sters'}])];
+    ...Object.entries(sync.tomb || {}).sort().map(([id, u]) => [{v: id}, {v: ''}, {v: ''}, {v: ''}, {v: u}, {v: 'sters'}]),
+    // SYNC-02: siturile întregi (JSON în coloana „data”, ca să nu pierdem nimic), în ordinea listei, și siturile șterse.
+    ...(sync.sites || []).map(st => { const {u, ...x} = st; return [{v: siteKey(st)}, {v: JSON.stringify(x)}, {v: st.n}, {v: ''}, {v: u || 0}, {v: 'sit'}]; }),
+    ...Object.entries(sync.stomb || {}).sort().map(([k, u]) => [{v: k}, {v: ''}, {v: ''}, {v: ''}, {v: u}, {v: 'sit-sters'}])];
   const ov4 = s4 ? `<Override PartName="/xl/worksheets/sheet4.xml" ContentType="${WS}"/>` : '';
   const sh4 = s4 ? `<sheet name="_sync" sheetId="4" state="hidden" r:id="rId5"/>` : '';
   const rel4 = s4 ? `<Relationship Id="rId5" Type="${NS}/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet4.xml"/>` : '';
@@ -395,15 +412,22 @@ function readXlsx(files){
   }
   return {flights: fl, sites: st};
 }
-/* Starea de sincronizare din foaia ascunsă „_sync” a backup-ului din Drive: {flights, tomb}, sau null dacă foaia lipsește. */
+/* Starea de sincronizare din foaia ascunsă „_sync” a backup-ului din Drive: {flights, tomb, sites, stomb}, sau null dacă foaia lipsește. */
 function readSync(files){
   const xml = xlSheetXml(files, '_sync'); if (!xml) return null;
-  const flights = [], tomb = {};
+  const flights = [], tomb = {}, sites = [], stomb = {}; let hasSites = false;
   for (const r of xlCells(xml, xlShared(files)).slice(1)){
-    const id = String(r[0] ?? '').trim(), u = num(r[4]) || 0; if (!id) continue;
-    if (String(r[5]).trim() === 'sters'){ tomb[id] = u; continue; }
+    const id = String(r[0] ?? '').trim(), u = num(r[4]) || 0, tip = String(r[5] ?? '').trim(); if (!id) continue;
+    if (tip === 'sters'){ tomb[id] = u; continue; }
+    if (tip === 'sit-sters'){ hasSites = true; stomb[id] = u; continue; }
+    if (tip === 'sit'){
+      hasSites = true;
+      try { const x = JSON.parse(String(r[1] ?? '')); if (x && x.n && isFinite(x.lat) && isFinite(x.lon) && Array.isArray(x.o) && x.o.length === 8) sites.push({...x, u}); } catch {}
+      continue;
+    }
     const date = String(r[1] ?? '').trim(), site = String(r[2] ?? '').trim(), minutes = Math.round(num(r[3]) || 0);
     if (/^\d{4}-\d{2}-\d{2}$/.test(date) && site && minutes > 0) flights.push({id, date, site, minutes, u});
   }
-  return {flights, tomb};
+  // sites = null: fișier scris de o versiune fără sincronizarea siturilor (atunci se folosește foaia „Situri”).
+  return {flights, tomb, sites: hasSites ? sites : null, stomb};
 }

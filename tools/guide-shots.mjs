@@ -216,7 +216,7 @@ const SHOTS = {
   // Lista de decolări.
   situri: {state: BOARD, h: 800, run: `${board}
     __el('#edit').click(); await __until(() => document.querySelector('#dlgEdit[open] #myList .row'));
-    __mark([['#myList .row .acts', 'l', {i: 1, dx: -6}], ['#pickOpen', 'tr', {dx: -4, dy: 4}], ['#resetSites', 'tr', {dx: -4, dy: 4}], ['#manualBox summary', 'r', {dx: -10}]]);`,
+    __mark([['#myList .row .acts', 'l', {i: 1, dx: -6}], ['#pickOpen', 'tr', {dx: -4, dy: 4}], ['#manualOpen', 'tr', {dx: -4, dy: 4}], ['#resetSites', 'tr', {dx: -4, dy: 4}]]);`,
     clip: `return __sheet()`},
   // Setări.
   setari: {state: BOARD, h: 1500, run: `${board}

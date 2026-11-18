@@ -114,3 +114,21 @@ test('zone: țările din jurul unui punct și țara probabilă (docs/sites/index
   assert.equal(core.bboxKm(45, 25, [44, 24, 46, 26]), 0);
   assert.ok(core.countriesNear(index, 45.9, 6.1, 50).includes('FR'), 'Annecy');
 });
+
+test('SYNC-02 siteMerge(): unește listele, modificarea nouă câștigă, ștergerile noi șterg', () => {
+  const A = {n: 'A', lat: 46.1, lon: 23.1, o: [2,0,0,0,0,0,0,0]}, B = {n: 'B', lat: 46.2, lon: 23.2, o: [0,2,0,0,0,0,0,0]}, C = {n: 'C', lat: 46.3, lon: 23.3, o: [0,0,2,0,0,0,0,0]};
+  // Situri diferite pe cele două dispozitive: le primești pe toate, întâi ordinea locală.
+  let m = core.siteMerge({sites: [{...A, u: 1}, {...B, u: 1}]}, {sites: [{...C, u: 1}, {...A, u: 1}]});
+  assert.deepEqual(m.sites.map(s => s.n), ['A', 'B', 'C']);
+  // Același sit modificat: câștigă varianta mai nouă (de oriunde), la egalitate cea locală.
+  m = core.siteMerge({sites: [{...A, u: 1}]}, {sites: [{...A, n: 'A nou', u: 2}]});
+  assert.equal(m.sites[0].n, 'A nou');
+  m = core.siteMerge({sites: [{...A, n: 'local', u: 0}]}, {sites: [{...A, n: 'drive', u: 0}]});
+  assert.equal(m.sites[0].n, 'local');
+  // Șters pe celălalt dispozitiv după ultima modificare: dispare; adăugat din nou după ștergere: rămâne.
+  m = core.siteMerge({sites: [{...A, u: 1}, {...B, u: 1}]}, {sites: [], stomb: {'46.1000,23.1000': 2}});
+  assert.deepEqual(m.sites.map(s => s.n), ['B']);
+  assert.deepEqual(m.stomb, {'46.1000,23.1000': 2});
+  m = core.siteMerge({sites: [{...A, u: 3}], stomb: {}}, {sites: [], stomb: {'46.1000,23.1000': 2}});
+  assert.deepEqual(m.sites.map(s => s.n), ['A']);
+});

@@ -58,3 +58,15 @@ test('exportul web = exportul Android (fiecare XML, octet cu octet)', {skip: !ex
   assert.deepEqual(Object.keys(web).sort(), Object.keys(android).sort());
   for (const k of Object.keys(web)) assert.equal(web[k], android[k], k);
 });
+
+test('SYNC-02: siturile și ștergerile lor trec prin backup-ul din Drive', async () => {
+  const sts = [{n: 'Agriș „N”', lat: 46.61, lon: 23.43, alt: 800, o: [2,1,0,0,0,0,0,1], hf: 774, u: 5}, {n: 'Făureni', lat: 46.7, lon: 23.9, alt: null, o: [0,0,0,0,2,2,0,0], u: 0}];
+  const files = await core.unzip((await bytes(core.xlsxParts([], sts, {flights: [], tomb: {}, sites: sts, stomb: {'45.0000,25.0000': 9}}))).buffer);
+  const st = core.readSync(files);
+  assert.deepEqual(st.sites, sts);
+  assert.deepEqual(st.stomb, {'45.0000,25.0000': 9});
+  assert.deepEqual(st.flights, [], 'rândurile de situri nu devin zile de zbor');
+  // Un fișier scris de versiunea fără situri în „_sync”: sites = null (se folosește foaia „Situri”).
+  const old = core.readSync(await core.unzip((await bytes(core.xlsxParts([], sts, {flights: [], tomb: {}}))).buffer));
+  assert.equal(old.sites, null);
+});

@@ -273,6 +273,9 @@ dialog.tall .sheet .body{flex:1;min-height:0;display:flex;flex-direction:column}
 .prof span{font-size:13px;color:var(--muted)}
 .prof[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 details.custom{margin-top:10px}
+.addtwo{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.addtwo .btn{min-height:48px}
+section.manual{margin-top:14px;padding-top:4px;border-top:1px solid var(--line)}
 details.custom summary{min-height:44px;display:flex;align-items:center;font-weight:600;color:var(--accent);cursor:pointer}
 .nodir-box{margin-top:12px;padding:12px;border-radius:12px;background:var(--maybe-bg)}
 .nodir-box p{margin:4px 0 0;font-size:14px}
@@ -407,13 +410,15 @@ details.hfbox .hf-in{padding:0 12px 12px}
     <h3>Lista ta</h3>
     <div class="list" id="myList"></div>
 
-    <div class="actions" style="margin-top:8px">
-      <button class="btn primary" id="pickOpen" type="button">Adaugă decolări</button>
-      <button class="btn small danger" id="resetSites" type="button">Reia configurarea</button>
+    <h3 style="margin-top:18px">Adaugă o decolare</h3>
+    <div class="addtwo">
+      <button class="btn primary" id="pickOpen" type="button">Din lista de decolări</button>
+      <button class="btn" id="manualOpen" type="button" aria-expanded="false" aria-controls="manualBox">Nouă, pe hartă</button>
     </div>
+    <p class="hint">Lista are decolările din ParaglidingEarth. Dacă a ta nu e acolo, o pui tu pe hartă.</p>
 
-
-    <details class="custom" id="manualBox"><summary>Adaugă o decolare care nu e în listă</summary>
+    <section class="manual" id="manualBox" hidden>
+    <h3>Decolare nouă</h3>
     <p class="hint" style="margin:0">Pune un pin pe hartă: completez coordonatele, altitudinea, numele și direcțiile sugerate din panta terenului. Poți corecta orice câmp, sau le poți scrie de mână.</p>
     <div class="actions" style="margin-top:8px">
       <button class="btn small" type="button" id="mapOpen">Alege pe hartă</button>
@@ -435,9 +440,13 @@ details.hfbox .hf-in{padding:0 12px 12px}
       <label class="f">Direcții bune de vânt (apasă: gri = nu, galben = marginal, verde = bun)</label>
       <div class="compass" id="mRose"></div>
       <p class="err" id="mErr" hidden></p>
-      <div class="actions"><button class="btn primary" type="submit">Adaugă situl</button></div>
+      <div class="actions"><button class="btn primary" type="submit">Adaugă situl</button><button class="btn small" type="button" id="manualClose">Renunță</button></div>
     </form>
-    </details>
+    </section>
+
+    <div class="actions" style="margin-top:24px">
+      <button class="btn small danger" id="resetSites" type="button">Reia configurarea</button>
+    </div>
 
   </div>
 </div></dialog>
@@ -668,7 +677,19 @@ function stationOf(s){
   for (const x of HOLFUY){ const km = distKm(s.lat, s.lon, x.lat, x.lon); if (km <= HOLFUY_MAX_KM && (!best || km < best.km)) best = {...x, km}; }
   return best;
 }
-const saveSites = () => { store.set('vld.sites', sites); };
+/* SYNC-02: la fiecare salvare aflăm ce s-a schimbat față de ultima salvare: situl nou sau modificat primește u = acum,
+   cel dispărut intră în „vld.stomb” (ca să nu reînvie la sincronizare). Ordinea nu se sincronizează. */
+let stomb = store.get('vld.stomb', {});
+const siteSig = ({u, ...x}) => JSON.stringify(x);
+const snapSites = () => new Map(sites.map(s => [key(s), siteSig(s)]));
+let siteSnap = snapSites();
+const saveSites = () => {
+  const now = Date.now(), cur = new Set();
+  for (const s of sites){ const k = key(s); cur.add(k); if (siteSnap.get(k) !== siteSig(s)) s.u = now; }
+  for (const k of siteSnap.keys()) if (!cur.has(k)) stomb[k] = now;
+  siteSnap = snapSites(); store.set('vld.sites', sites); store.set('vld.stomb', stomb);
+  markDirty();
+};
 
 
 function skySvg(icon){
@@ -963,8 +984,13 @@ function siteLinks(s){
 /* ---------- editare ---------- */
 let manualRose = [0,0,0,0,0,0,0,0];
 function openEdit(){
-  renderMyList(); renderManualRose();
-  $('#dlgEdit').showModal();
+  renderMyList(); renderManualRose(); showManual(false);
+  $('#dlgEdit').showModal(); syncOnOpen();
+}
+/* SYNC-02 / UI: „Nouă, pe hartă” deschide formularul și direct harta. */
+function showManual(on){
+  $('#manualBox').hidden = !on; $('#manualOpen').setAttribute('aria-expanded', String(on));
+  if (on){ $('#manualBox').scrollIntoView({behavior: 'smooth', block: 'start'}); openMap(); }
 }
 /* UI-05: setările (limite, ore, limbă, despre) au ecranul lor, separat de lista de situri. */
 function renderModels(){
@@ -1220,16 +1246,22 @@ async function syncNow(){
     const find = async name => (await (await gfetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`name='${name}' and trashed=false`)}&spaces=drive&orderBy=modifiedTime%20desc&fields=files(id)`)).json()).files?.[0]?.id;
     const media = id => gfetch(`https://www.googleapis.com/drive/v3/files/${id}?alt=media`);
     const [fileId, oldId] = await Promise.all([find(DRIVE_FILE), find(DRIVE_OLD_JSON)]);
-    let remote = {flights: [], tomb: {}};
+    let remote = {flights: [], tomb: {}}, rSites = {sites: [], stomb: {}};
     if (fileId){
-      const files = await unzip(await (await media(fileId)).arrayBuffer());
+      const files = await unzip(await (await media(fileId)).arrayBuffer()), rs = readSync(files);
       // Fără foaia „_sync” (ex. un export urcat de mână cu același nume): zilele din foaia vizibilă, cu id-uri noi.
-      remote = readSync(files) || {flights: (readXlsx(files)?.flights || []).map((f, i) => ({...f, id: `x${i}-${f.date}`, u: 0})), tomb: {}};
+      remote = rs || {flights: (readXlsx(files)?.flights || []).map((f, i) => ({...f, id: `x${i}-${f.date}`, u: 0})), tomb: {}};
+      // Siturile: din „_sync”; dacă fișierul e scris de o versiune mai veche, din foaia „Situri” (fără dată: câștigă cele locale).
+      rSites = rs?.sites ? {sites: rs.sites, stomb: rs.stomb} : {sites: (readXlsx(files)?.sites || []).map(x => ({...x, u: 0})), stomb: rs?.stomb || {}};
     }
     if (oldId) remote = syncMerge(remote, await (await media(oldId)).json());
     const m = syncMerge({flights, tomb}, remote);
     flights = m.flights; tomb = m.tomb; saveFlights(); store.set('vld.tomb', tomb);
-    const body = zipBlob(xlsxParts(flights, sites, {flights, tomb}), XLSX_TYPE);
+    const had = new Set(sites.map(key)), before = JSON.stringify(sites), sm = siteMerge({sites, stomb}, rSites);
+    sites = sm.sites; stomb = sm.stomb; siteSnap = snapSites(); store.set('vld.stomb', stomb);
+    if (sites.length || store.get('vld.sites', null) !== null) store.set('vld.sites', sites);   // lista goală nu sare peste prima pornire
+    if (JSON.stringify(sites) !== before) sitesFromSync(sites.filter(x => !had.has(key(x))).length);
+    const body = zipBlob(xlsxParts(flights, sites, {flights, tomb, sites, stomb}), XLSX_TYPE);
     if (fileId) await gfetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {method: 'PATCH', headers: {'Content-Type': XLSX_TYPE}, body});
     else {
       const form = new FormData();
@@ -1243,6 +1275,13 @@ async function syncNow(){
   } finally {
     syncing = false; if ($('#dlgLog').open) renderLog(); render();
   }
+}
+/* Siturile s-au schimbat la sincronizare (de pe alt dispozitiv): redesenăm; cele noi au nevoie de prognoză. */
+function sitesFromSync(added){
+  if ($('#dlgEdit').open) renderMyList();
+  if ($('#dlgOnb').open && sites.length){ $('#dlgOnb').close(); dayIdx = 0; }
+  render();
+  if (added){ load().then(() => { if (dayIdx === 0) scrollToNow(); }); toast(added === 1 ? t('1 sit adus din Google Drive') : t('{n} situri aduse din Google Drive', {n: added})); }
 }
 /* După o modificare: urcă în Drive imediat dacă tokenul e valid; altfel rămâne marcată și se urcă la următoarea deschidere a jurnalului. */
 function markDirty(){
@@ -1372,6 +1411,9 @@ document.addEventListener('click', e => {
   if (btn.dataset.add != null){ const {c, ...s} = structuredClone(addable[+btn.dataset.add]); if (sites.some(x => key(x) === key(s))) return toast(t('{n} e deja în listă', {n: s.n})); sites.push(s); map?.closePopup(); saveSites(); renderMyList(); toast(t('{n} a fost adăugat', {n: s.n})); load(); return; }
   if (btn.dataset.rose != null){ const i = +btn.dataset.rose; manualRose[i] = (manualRose[i] + 1) % 3; renderManualRose(); $(`[data-rose="${i}"]`).focus(); return; }
   if (btn.id === 'mapOpen') return openMap();
+  if (btn.id === 'manualOpen') return showManual(true);
+  if (btn.id === 'manualClose') return showManual(false);
+  if (btn.id === 'pickManual'){ $('#dlgPick').close(); if (!$('#dlgEdit').open) openEdit(); return showManual(true); }
   if (btn.id === 'geoHere'){
     if (!navigator.geolocation) return mapInfo(t('Telefonul nu oferă localizare în acest browser.'));
     mapInfo(t('Caut poziția GPS…'));
@@ -1497,7 +1539,8 @@ function renderPickFoot(foot = pickEls()[1]){
   if (pick.host === 'onb'){
     const n = pick.chosen.size;
     foot.innerHTML = `<button class="btn primary" type="button" data-onb="next" ${n ? '' : 'disabled'}>${n ? t('Continuă cu {n}', {n: decolari(n)}) : t('Alege cel puțin o decolare')}</button>`;
-  } else foot.innerHTML = `<button class="btn primary" type="button" data-close>${t('Gata · {n} în lista ta', {n: decolari(sites.length)})}</button>`;
+  } else foot.innerHTML = `<button class="btn primary" type="button" data-close>${t('Gata · {n} în lista ta', {n: decolari(sites.length)})}</button>
+    <p class="hint" style="margin:6px 0 0;text-align:center">${t('Nu găsești decolarea?')} <button class="linkbtn" type="button" id="pickManual">${t('Pune-o pe hartă')}</button></p>`;
 }
 const markerStyle = x => isChosen(x) ? {radius: 8, weight: 2, color: '#ffffff', fillColor: '#d4570c', fillOpacity: 1}
   : noDirs(x) ? {radius: 6, weight: 2, color: '#9a6a0e', fillColor: '#ffffff', fillOpacity: .9}
@@ -1579,6 +1622,7 @@ function renderOnb(){
         <button class="btn" type="button" data-onb="go" data-zone="country">${t('Alege țara')}</button>
       </div>
       <p class="hint" style="margin-top:14px">${t('Locația e folosită doar ca să arătăm decolările din jurul tău. Nu se salvează și nu pleacă nicăieri.')}</p>
+      ${GOOGLE_CLIENT_ID ? `<p class="hint">${t('Folosești aplicația pe alt dispozitiv?')} <button class="linkbtn" type="button" data-onb="gdrive">${t('Adu siturile și jurnalul din Google Drive')}</button></p>` : ''}
       <p class="hint">${t('Ai un export din jurnal?')} <button class="linkbtn" type="button" data-onb="import">${t('Importă-l')}</button></p>
       <p class="hint">${t('Prima dată aici?')} <a class="linkbtn" href="${GUIDE}#start">${t('Vezi ghidul, cu imagini')}</a></p>`;
     foot.innerHTML = '';
@@ -1606,6 +1650,7 @@ function onbClick(btn){
   if (a === 'next'){ if (pick.chosen.size){ onb.step = 2; renderOnb(); } return true; }
   if (a === 'done'){ finishOnb(); return true; }
   if (a === 'import'){ $('#importFile').value = ''; $('#importFile').click(); return true; }
+  if (a === 'gdrive'){ syncNow().then(() => { if ($('#dlgOnb').open && syncErr) toast(syncErr); else if ($('#dlgOnb').open) toast(t('În Google Drive nu sunt situri încă. Alege-le mai jos.')); }); return true; }
   if (btn.dataset.onbprof){ onb.prof = btn.dataset.onbprof; renderOnb(); return true; }
   return false;
 }
